@@ -91,7 +91,12 @@
 <div class="content" style="padding-bottom: 80px;">
     <div id="page-cases" class="page active">
         <h2 class="section-title">Магазин</h2>
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button class="btn" id="btnTabCases" onclick="switchShopTab('cases')">Кейсы</button>
+            <button class="btn btn-outline" id="btnTabKeys" onclick="switchShopTab('keys')">Ключи</button>
+        </div>
         <div class="cases-grid" id="casesGrid"></div>
+        <div class="cases-grid" id="keysGrid" style="display: none;"></div>
     </div>
 
     <div id="page-case-view" class="page" style="margin: -20px; padding-bottom: 40px;">
@@ -220,7 +225,7 @@
 <div class="modal-overlay" id="resultModal">
     <div class="modal-content">
         <h2 style="margin-top: 0; color: #fff; font-size: 26px;" id="resultTitle">Отличный дроп!</h2>
-        <div id="resultItemIcon" style="font-size: 90px; margin: 25px 0;">🗡️</div>
+        <div id="resultItemIcon" style="font-size: 90px; margin: 25px 0; display:flex; justify-content:center; align-items:center;">🗡️</div>
         <div id="resultItemName" style="font-weight: 800; font-size: 22px; margin-bottom: 8px; line-height: 1.2;">Меч</div>
         <div id="resultItemInfoBlock" style="color: #8b8b99; font-size: 15px; margin-bottom: 30px;"></div>
         
@@ -313,23 +318,16 @@
     let currentWithdrawItemId = null;
     let userName = "Игрок";
 
-    const genericSecretItem = { id: 'secret', type: 'item', icon: '❓', image: '', name: 'Секретный дроп', color: '#ffea00', price: 0 };
+    
+    const genericSecretItem = { id: 'secret', type: 'item', image: 'https://i.postimg.cc/mrnXBcgj/IMAGE-2026-02-27-17-34-31.jpg', name: 'Секретный дроп', color: '#ffea00', price: 0, isSecret: true };
 
     const allItems = {
-        '1': { id: '1', type: 'item', icon: '🧢', name: 'Кепка нуба', color: '#b0c3d9', price: 20, weight: 1000 },
-        '2': { id: '2', type: 'item', icon: '👕', name: 'Футболка', color: '#b0c3d9', price: 30, weight: 500 },
-        '3': { id: '3', type: 'item', icon: '🗡️', name: 'Железный меч', color: '#4b69ff', price: 150, weight: 100 },
-        '4': { id: '4', type: 'item', icon: '🐶', name: 'Питомец Догги', color: '#8847ff', price: 400, weight: 30 },
-        '5': { id: '5', type: 'item', icon: '💎', name: 'Доминатор', color: '#d32ce6', price: 1200, weight: 5 },
-        '6': { id: '6', type: 'item', icon: '🔥', name: 'Огненные рога', color: '#eb4b4b', price: 2500, weight: 1 },
-
+        
         'lux_jean': { id: 'lux_jean', type: 'item', name: 'Джинсовка ЛуиВитон', color: '#ffea00', image: 'https://i.postimg.cc/GtKWBQMT/IMAGE-2026-02-27-11-16-28.jpg', price: 1250000, weight: 1, isSecret: true },
         'lux_puff': { id: 'lux_puff', type: 'item', name: 'Черный Пуховик ЛуиВитон', color: '#ffea00', image: 'https://i.postimg.cc/MGwm4SZw/IMAGE-2026-02-27-11-18-58.jpg', price: 1250000, weight: 1, isSecret: true },
         'lux_rab': { id: 'lux_rab', type: 'item', name: 'Джинсовка Кролик ЛуиВитон', color: '#ffea00', image: 'https://i.postimg.cc/bJ7xxcBT/IMAGE-2026-02-27-11-22-09.jpg', price: 1300000, weight: 1, isSecret: true },
-
         'lux_r1': { id: 'lux_r1', type: 'item', name: 'Бизнес Костюм Перфекто', color: '#eb4b4b', image: 'https://i.postimg.cc/Z0kdd8C9/IMAGE-2026-02-27-11-20-22.jpg', price: 300000, weight: 10 },
         'lux_r2': { id: 'lux_r2', type: 'item', name: 'Деловой Костюм', color: '#eb4b4b', image: 'https://i.postimg.cc/zXjhBgqr/IMAGE-2026-02-27-11-23-40.jpg', price: 300000, weight: 10 },
-
         'lux_b1': { id: 'lux_b1', type: 'item', name: 'Заст. Худи Меллстроя', color: '#54a0ff', image: 'https://i.postimg.cc/0y4bMGFg/IMAGE-2026-02-27-11-25-00.jpg', price: 150000, weight: 35 },
         'lux_b2': { id: 'lux_b2', type: 'item', name: 'Расст. Худи Меллстроя', color: '#54a0ff', image: 'https://i.postimg.cc/5N7tTqx2/IMAGE-2026-02-27-11-25-37.jpg', price: 150000, weight: 30 },
         'lux_b3': { id: 'lux_b3', type: 'item', name: 'Черные Штаны Гуччи', color: '#54a0ff', image: 'https://i.postimg.cc/XNZ3XS34/IMAGE-2026-02-27-11-29-30.jpg', price: 100000, weight: 30 },
@@ -339,17 +337,30 @@
         'lux_b7': { id: 'lux_b7', type: 'item', name: 'Тигровое худи Гуччи', color: '#54a0ff', image: 'https://i.postimg.cc/25BFVSH5/IMAGE-2026-02-27-11-32-46.jpg', price: 80000, weight: 40 },
         'lux_b8': { id: 'lux_b8', type: 'item', name: 'Белое Худи ЛуиВитон', color: '#54a0ff', image: 'https://i.postimg.cc/Ssf9M2cf/IMAGE-2026-02-27-11-33-46.jpg', price: 60000, weight: 45 },
 
-        'lux_m1': { id: 'lux_m1', type: 'money', name: '50 000 ₽', color: '#b0c3d9', price: 50000, weight: 40 },
-        'lux_m2': { id: 'lux_m2', type: 'money', name: '30 000 ₽', color: '#b0c3d9', price: 30000, weight: 50 },
-        'lux_m3': { id: 'lux_m3', type: 'money', name: '20 000 ₽', color: '#b0c3d9', price: 20000, weight: 65 },
-
         'm1': { id: 'm1', type: 'money', name: '1 000 000 ₽', color: '#ffea00', price: 1000000, weight: 1, isSecret: true },
         'm2': { id: 'm2', type: 'money', name: '100 000 ₽', color: '#ff4757', price: 100000, weight: 5 },
         'm3': { id: 'm3', type: 'money', name: '50 000 ₽', color: '#54a0ff', price: 50000, weight: 15 },
         'm4': { id: 'm4', type: 'money', name: '30 000 ₽', color: '#b0c3d9', price: 30000, weight: 25 },
         'm5': { id: 'm5', type: 'money', name: '25 000 ₽', color: '#b0c3d9', price: 25000, weight: 35 },
         'm6': { id: 'm6', type: 'money', name: '15 000 ₽', color: '#b0c3d9', price: 15000, weight: 50 },
-        'm7': { id: 'm7', type: 'money', name: '5 000 ₽', color: '#b0c3d9', price: 5000, weight: 65 }
+        'm7': { id: 'm7', type: 'money', name: '5 000 ₽', color: '#b0c3d9', price: 5000, weight: 65 },
+
+        
+        'key_palm': { id: 'key_palm', type: 'key', name: 'Ключ Palm Angels', color: '#ffea00', image: 'https://i.postimg.cc/43qLsCFY/IMAGE-2026-02-27-17-06-03.jpg', price: 1000000, weight: 0 },
+
+        
+        'bape_sec': { id: 'bape_sec', type: 'item', name: 'Секретный Дроп Bape', color: '#ffea00', image: 'https://i.postimg.cc/mrnXBcgj/IMAGE-2026-02-27-17-34-31.jpg', price: 14000000, weight: 0.000000000001, isSecret: true },
+        'bape_red1': { id: 'bape_red1', type: 'item', name: 'Коричневый Рюкзак Бейп', color: '#eb4b4b', image: 'https://i.postimg.cc/HxCMwHZW/IMAGE-2026-02-27-17-37-34.jpg', price: 130000, weight: 30 },
+        'bape_blu1': { id: 'bape_blu1', type: 'item', name: 'Фиолетовая кофта Бейп', color: '#54a0ff', image: 'https://i.postimg.cc/gjtrTPDh/IMAGE-2026-02-27-17-39-01.jpg', price: 30000, weight: 40 },
+        'bape_blu2': { id: 'bape_blu2', type: 'item', name: 'Черная Футболка Бейп', color: '#54a0ff', image: 'https://i.postimg.cc/y6pdBsms/IMAGE-2026-02-27-17-39-53.jpg', price: 20000, weight: 45 },
+        'bape_blu3': { id: 'bape_blu3', type: 'item', name: 'Желтая футболка Бейп', color: '#54a0ff', image: 'https://i.postimg.cc/m2MtSKHm/IMAGE-2026-02-27-17-41-47.jpg', price: 25000, weight: 45 },
+        'bape_blu4': { id: 'bape_blu4', type: 'item', name: 'Песчаное Худи Бейп', color: '#54a0ff', image: 'https://i.postimg.cc/K8xvDjFr/IMAGE-2026-02-27-17-42-28.jpg', price: 45000, weight: 35 },
+        'bape_blu5': { id: 'bape_blu5', type: 'item', name: 'Серые штаны Бейп', color: '#54a0ff', image: 'https://i.postimg.cc/9FjWc0D6/IMAGE-2026-02-27-17-43-08.jpg', price: 35000, weight: 40 },
+        'bape_blu6': { id: 'bape_blu6', type: 'item', name: 'Джинсы Бейп', color: '#54a0ff', image: 'https://i.postimg.cc/vBVsswbb/IMAGE-2026-02-27-17-43-38.jpg', price: 35000, weight: 40 },
+        'bape_blu7': { id: 'bape_blu7', type: 'item', name: 'Синие джинсы Бейп', color: '#54a0ff', image: 'https://i.postimg.cc/dVVc0yJF/IMAGE-2026-02-27-17-44-24.jpg', price: 35000, weight: 40 },
+        'bape_blu8': { id: 'bape_blu8', type: 'item', name: 'Черные Джинсы Бейп', color: '#54a0ff', image: 'https://i.postimg.cc/3xRzhQZr/IMAGE-2026-02-27-17-45-07.jpg', price: 35000, weight: 40 },
+        'bape_gry1': { id: 'bape_gry1', type: 'item', name: 'Синее худи Бейп', color: '#b0c3d9', image: 'https://i.postimg.cc/J4tQ4rSQ/IMAGE-2026-02-27-17-47-00.jpg', price: 15000, weight: 55 },
+        'bape_gry2': { id: 'bape_gry2', type: 'item', name: 'Красная Футболка Бейп', color: '#b0c3d9', image: 'https://i.postimg.cc/VsZjTy5j/IMAGE-2026-02-27-17-47-38.jpg', price: 10000, weight: 60 }
     };
 
     const casesData = [
@@ -365,8 +376,20 @@
             name: 'Кейс Люкс',
             image: 'https://i.postimg.cc/3NjKtmt7/IMAGE-2026-02-27-11-14-36.jpg',
             price: 150000,
-            drops: ['lux_jean', 'lux_puff', 'lux_rab', 'lux_r1', 'lux_r2', 'lux_b1', 'lux_b2', 'lux_b3', 'lux_b4', 'lux_b5', 'lux_b6', 'lux_b7', 'lux_b8', 'lux_m1', 'lux_m2', 'lux_m3']
+            drops: ['lux_jean', 'lux_puff', 'lux_rab', 'lux_r1', 'lux_r2', 'lux_b1', 'lux_b2', 'lux_b3', 'lux_b4', 'lux_b5', 'lux_b6', 'lux_b7', 'lux_b8']
+        },
+        {
+            id: 'palm_case',
+            name: 'Кейс Palm Angels',
+            image: 'https://i.postimg.cc/9fZTRvQY/IMAGE-2026-02-27-17-08-01.jpg',
+            price: 3000000,
+            requiredKey: 'key_palm',
+            drops: ['bape_sec', 'bape_red1', 'bape_blu1', 'bape_blu2', 'bape_blu3', 'bape_blu4', 'bape_blu5', 'bape_blu6', 'bape_blu7', 'bape_blu8', 'bape_gry1', 'bape_gry2']
         }
+    ];
+
+    const keysData = [
+        { id: 'key_palm', name: 'Ключ Palm Angels', image: 'https://i.postimg.cc/43qLsCFY/IMAGE-2026-02-27-17-06-03.jpg', price: 1000000 }
     ];
 
     const bonusPrizes = [
@@ -395,6 +418,11 @@
 
     function renderItemIcon(item, isTape = false) {
         if (!item) return '?';
+        
+        if (item.isSecret && item.image) {
+            return `<img src="${item.image}" alt="Secret" style="max-width:80%; max-height:80%; border-radius:12px; border: 2px solid ${item.color || '#ffea00'}; box-shadow: 0 0 15px ${item.color || '#ffea00'};">`;
+        }
+        
         if (isTape && item.isSecret) {
             return `<div style="font-size:40px; color:${item.color || '#ffea00'}; filter: drop-shadow(0 0 10px ${item.color || '#ffea00'})">❓</div>`;
         }
@@ -498,6 +526,7 @@
         }
 
         renderCases();
+        renderKeys();
         updateBalanceUI();
         updateBonusButton();
     };
@@ -520,6 +549,13 @@
         if(pageId === 'inventory') renderInventory();
         if(pageId === 'games') { renderCraftInventory(); updateUpgUI(); }
         if(pageId === 'bonus') updateBonusButton();
+    }
+
+    function switchShopTab(tabId) {
+        document.getElementById('casesGrid').style.display = tabId === 'cases' ? 'grid' : 'none';
+        document.getElementById('keysGrid').style.display = tabId === 'keys' ? 'grid' : 'none';
+        document.getElementById('btnTabCases').classList.replace(tabId === 'cases' ? 'btn-outline' : 'btn', tabId === 'cases' ? 'btn' : 'btn-outline');
+        document.getElementById('btnTabKeys').classList.replace(tabId === 'keys' ? 'btn-outline' : 'btn', tabId === 'keys' ? 'btn' : 'btn-outline');
     }
 
     function switchGameTab(tabId) {
@@ -572,6 +608,36 @@
         });
     }
 
+    function renderKeys() {
+        const grid = document.getElementById('keysGrid');
+        grid.innerHTML = '';
+        keysData.forEach(k => {
+            grid.innerHTML += `
+                <div class="case-card" onclick="buyKey('${k.id}')">
+                    <div class="case-card-img"><img src="${k.image}" style="width:100%; height:100%;"></div>
+                    <div class="case-card-title">${k.name}</div>
+                    <div class="case-card-price">${k.price.toLocaleString('ru-RU')} ₽</div>
+                    <button class="btn btn-warning" style="margin-top: 10px; padding: 8px;">Купить</button>
+                </div>
+            `;
+        });
+    }
+
+    function buyKey(keyId) {
+        const keyItem = allItems[keyId];
+        if (balance < keyItem.price) {
+            alert('Недостаточно средств для покупки ключа!');
+            return;
+        }
+        if(confirm(`Купить ${keyItem.name} за ${keyItem.price.toLocaleString('ru-RU')} ₽?`)) {
+            balance -= keyItem.price;
+            updateBalanceUI();
+            inventory.push({ ...keyItem, invId: String(Date.now() + Math.random()) });
+            saveInventory();
+            alert('Ключ успешно куплен и добавлен в инвентарь!');
+        }
+    }
+
     function openModal(id) { 
         const m = document.getElementById(id);
         m.style.display = 'flex';
@@ -587,7 +653,13 @@
     function openCasePreview(caseId) {
         currentPreviewCase = casesData.find(c => c.id === caseId);
         document.getElementById('viewCaseImg').src = currentPreviewCase.image || '';
-        document.getElementById('viewCaseBtn').innerText = `Открыть за ${currentPreviewCase.price.toLocaleString('ru-RU')} ₽`;
+        
+        if (currentPreviewCase.requiredKey) {
+            const reqKeyItem = allItems[currentPreviewCase.requiredKey];
+            document.getElementById('viewCaseBtn').innerHTML = `Открыть за ${currentPreviewCase.price.toLocaleString('ru-RU')} ₽<br><span style="font-size: 11px;">Требуется: ${reqKeyItem.name}</span>`;
+        } else {
+            document.getElementById('viewCaseBtn').innerText = `Открыть за ${currentPreviewCase.price.toLocaleString('ru-RU')} ₽`;
+        }
 
         const dropsContainer = document.getElementById('viewCaseDrops');
         dropsContainer.innerHTML = '';
@@ -605,8 +677,9 @@
         dropsObjects.forEach(item => {
             let displayContent = '';
             if (item.isSecret) {
-                displayContent = `<div style="font-size: 36px; margin: 10px 0; color: ${item.color};">❓</div>
-                                  <div style="font-size: 11px; font-weight: bold; color: ${item.color};">Секретный дроп</div>`;
+                const displayIcon = item.image ? `<img src="${item.image}">` : `<div style="font-size: 36px; margin: 10px 0; color: ${item.color};">❓</div>`;
+                displayContent = `${displayIcon}
+                                  <div style="font-size: 11px; font-weight: bold; color: ${item.color}; margin-top:5px;">Секретный дроп</div>`;
             } else if (item.type === 'money') {
                 displayContent = `<div style="font-size: 14px; font-weight: 800; margin: 18px 0; color: ${item.color};">${item.price.toLocaleString('ru-RU')} ₽</div>`;
             } else {
@@ -631,11 +704,30 @@
             alert('Недостаточно средств на балансе!'); return;
         }
 
+        let requiredKeyInvId = null;
+        if (currentPreviewCase.requiredKey) {
+            const reqKeyObj = allItems[currentPreviewCase.requiredKey];
+            const hasKey = inventory.find(i => i.id === currentPreviewCase.requiredKey);
+            if (!hasKey) {
+                alert(`У вас нет ключа для открытия этого кейса!\nВам нужен: ${reqKeyObj.name}. Купите его в разделе Ключи.`);
+                return;
+            }
+            if (!confirm(`Купить кейс за ${currentPreviewCase.price.toLocaleString('ru-RU')} ₽ и использовать ${reqKeyObj.name}?`)) {
+                return;
+            }
+            requiredKeyInvId = hasKey.invId;
+        }
+
         isOpening = true;
         isStandardCase = true;
         isBonusMode = false;
         
         balance -= currentPreviewCase.price;
+        if (requiredKeyInvId) {
+            inventory = inventory.filter(i => String(i.invId) !== String(requiredKeyInvId));
+            saveInventory();
+        }
+        
         stats.opened += 1;
         updateBalanceUI();
         document.getElementById('statOpened').innerText = stats.opened;
@@ -648,18 +740,28 @@
         const possibleDrops = currentPreviewCase.drops.map(id => allItems[id]).filter(item => item !== undefined);
         initRoulette(possibleDrops);
 
-        const roll = Math.random() * 100;
         
-        if (roll <= 1) {
-            const secretDrops = possibleDrops.filter(i => i.isSecret);
-            if (secretDrops.length > 0) {
-                lastWonItem = JSON.parse(JSON.stringify(secretDrops[Math.floor(Math.random() * secretDrops.length)]));
+        if (currentPreviewCase.id === 'palm_case') {
+            if (Math.random() < 0.000000000001) {
+                lastWonItem = JSON.parse(JSON.stringify(allItems['bape_sec']));
             } else {
-                lastWonItem = JSON.parse(JSON.stringify(getWeightedRandomItem(possibleDrops)));
+                const nonSecretDrops = possibleDrops.filter(i => !i.isSecret);
+                lastWonItem = JSON.parse(JSON.stringify(getWeightedRandomItem(nonSecretDrops)));
             }
         } else {
-            const nonSecretDrops = possibleDrops.filter(i => !i.isSecret);
-            lastWonItem = JSON.parse(JSON.stringify(getWeightedRandomItem(nonSecretDrops)));
+            
+            const roll = Math.random() * 100;
+            if (roll <= 1) {
+                const secretDrops = possibleDrops.filter(i => i.isSecret);
+                if (secretDrops.length > 0) {
+                    lastWonItem = JSON.parse(JSON.stringify(secretDrops[Math.floor(Math.random() * secretDrops.length)]));
+                } else {
+                    lastWonItem = JSON.parse(JSON.stringify(getWeightedRandomItem(possibleDrops)));
+                }
+            } else {
+                const nonSecretDrops = possibleDrops.filter(i => !i.isSecret);
+                lastWonItem = JSON.parse(JSON.stringify(getWeightedRandomItem(nonSecretDrops)));
+            }
         }
 
         if (!lastWonItem.price) lastWonItem.price = 0; 
@@ -694,12 +796,10 @@
             
             if (randomItem.type === 'promo' || randomItem.type === 'nothing') {
                 div.innerHTML = `<div style="font-size: 40px;">${randomItem.icon}</div><div class="item-text" style="color:${randomItem.color}">${randomItem.name}</div>`;
-            } else if (randomItem.isSecret) {
-                div.innerHTML = `<div style="font-size: 40px; color:${randomItem.color}; text-shadow: 0 0 10px ${randomItem.color};">❓</div>`;
             } else if (randomItem.type === 'money') {
                 div.innerHTML = `<div style="font-size: 16px; font-weight: 800; color:${randomItem.color}">${(randomItem.price||0).toLocaleString('ru-RU')} ₽</div>`;
             } else {
-                div.innerHTML = `<div>${renderItemIcon(randomItem)}</div>`;
+                div.innerHTML = `<div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">${renderItemIcon(randomItem, true)}</div>`;
             }
             container.appendChild(div);
         }
@@ -717,12 +817,10 @@
             
             if (winningItem.type === 'promo' || winningItem.type === 'nothing') {
                 winDiv.innerHTML = `<div style="font-size: 40px;">${winningItem.icon}</div><div class="item-text" style="color:${winningItem.color}">${winningItem.name}</div>`;
-            } else if (winningItem.isSecret) {
-                winDiv.innerHTML = `<div style="font-size: 40px; color:${winningItem.color}; text-shadow: 0 0 10px ${winningItem.color};">❓</div>`;
             } else if (winningItem.type === 'money') {
                 winDiv.innerHTML = `<div style="font-size: 16px; font-weight: 800; color:${winningItem.color}">${(winningItem.price||0).toLocaleString('ru-RU')} ₽</div>`;
             } else {
-                winDiv.innerHTML = `<div style="filter: drop-shadow(0 0 15px ${winningItem.color})">${renderItemIcon(winningItem)}</div>`;
+                winDiv.innerHTML = `<div style="filter: drop-shadow(0 0 15px ${winningItem.color}); display:flex; justify-content:center; align-items:center; width:100%; height:100%;">${renderItemIcon(winningItem, true)}</div>`;
             }
         }
 
@@ -731,7 +829,7 @@
             const secretIndex = winningIndex + offsetOptions[Math.floor(Math.random() * offsetOptions.length)];
             if (rouletteItems.children[secretIndex]) {
                 const secretDiv = rouletteItems.children[secretIndex];
-                secretDiv.innerHTML = `<div style="font-size: 70px; filter: drop-shadow(0 0 15px ${genericSecretItem.color});">${genericSecretItem.icon}</div>`;
+                secretDiv.innerHTML = `<div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%; filter: drop-shadow(0 0 15px ${genericSecretItem.color});">${renderItemIcon(genericSecretItem, true)}</div>`;
                 secretDiv.style.borderBottom = `4px solid ${genericSecretItem.color}`;
                 secretDiv.style.background = `linear-gradient(to top, ${genericSecretItem.color}44, transparent)`;
             }
@@ -764,14 +862,11 @@
         
         document.getElementById('resultTitle').innerText = title;
         
-        if (lastWonItem.isSecret) {
-            document.getElementById('resultItemIcon').innerHTML = `<div style="font-size: 90px; color: ${lastWonItem.color}; text-shadow: 0 0 20px ${lastWonItem.color};">❓</div>`;
-        } else {
-            document.getElementById('resultItemIcon').innerHTML = renderItemIcon(lastWonItem);
-        }
-        
+        document.getElementById('resultItemIcon').innerHTML = renderItemIcon(lastWonItem);
         document.getElementById('resultItemName').innerText = lastWonItem.name;
         document.getElementById('resultItemName').style.color = lastWonItem.color;
+        
+        
         document.getElementById('resultItemIcon').style.filter = `drop-shadow(0 0 40px ${lastWonItem.color})`;
         
         const infoBlock = document.getElementById('resultItemInfoBlock');
@@ -926,9 +1021,10 @@
 
     function renderCraftInventory() {
         const grid = document.getElementById('craftInventoryGrid'); grid.innerHTML = '';
-        const standardInv = inventory.filter(i => !i.isSecret && i.type !== 'money');
+        
+        const standardInv = inventory.filter(i => !i.isSecret && i.type !== 'money' && i.type !== 'key');
         if (standardInv.length < 3) {
-            grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #8b8b99; padding: 20px 0;">Для контракта нужно минимум 3 обычных предмета</div>'; return;
+            grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #8b8b99; padding: 20px 0;">Для контракта нужно минимум 3 обычных предмета (Ключи использовать нельзя)</div>'; return;
         }
         standardInv.forEach(item => {
             const isSelected = craftSelectedIds.includes(String(item.invId));
@@ -998,7 +1094,7 @@
 
     function openUpgMyModal() {
         const grid = document.getElementById('upgMyGrid'); grid.innerHTML = '';
-        const standardInv = inventory.filter(i => !i.isSecret && i.type !== 'money');
+        const standardInv = inventory.filter(i => !i.isSecret && i.type !== 'money' && i.type !== 'key');
         if (standardInv.length === 0) {
             grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #8b8b99;">Нет подходящих предметов</div>';
         } else {
