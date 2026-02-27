@@ -239,8 +239,7 @@
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 12px; display: none;" id="resultActionsPromo">
-            <button class="btn btn-outline" onclick="finishOpening()">Закрыть</button>
-        </div>
+            </div>
     </div>
 </div>
 
@@ -319,10 +318,9 @@
     let userName = "Игрок";
 
     
-    const genericSecretItem = { id: 'secret', type: 'item', image: 'https://i.postimg.cc/mrnXBcgj/IMAGE-2026-02-27-17-34-31.jpg', name: 'Секретный дроп', color: '#ffea00', price: 0, isSecret: true };
+    const genericSecretItem = { id: 'secret', type: 'item', icon: '❓', image: '', name: 'Секретный дроп', color: '#ffea00', price: 0, isSecret: true };
 
     const allItems = {
-        
         'lux_jean': { id: 'lux_jean', type: 'item', name: 'Джинсовка ЛуиВитон', color: '#ffea00', image: 'https://i.postimg.cc/GtKWBQMT/IMAGE-2026-02-27-11-16-28.jpg', price: 1250000, weight: 1, isSecret: true },
         'lux_puff': { id: 'lux_puff', type: 'item', name: 'Черный Пуховик ЛуиВитон', color: '#ffea00', image: 'https://i.postimg.cc/MGwm4SZw/IMAGE-2026-02-27-11-18-58.jpg', price: 1250000, weight: 1, isSecret: true },
         'lux_rab': { id: 'lux_rab', type: 'item', name: 'Джинсовка Кролик ЛуиВитон', color: '#ffea00', image: 'https://i.postimg.cc/bJ7xxcBT/IMAGE-2026-02-27-11-22-09.jpg', price: 1300000, weight: 1, isSecret: true },
@@ -345,10 +343,8 @@
         'm6': { id: 'm6', type: 'money', name: '15 000 ₽', color: '#b0c3d9', price: 15000, weight: 50 },
         'm7': { id: 'm7', type: 'money', name: '5 000 ₽', color: '#b0c3d9', price: 5000, weight: 65 },
 
-        
         'key_palm': { id: 'key_palm', type: 'key', name: 'Ключ Palm Angels', color: '#ffea00', image: 'https://i.postimg.cc/43qLsCFY/IMAGE-2026-02-27-17-06-03.jpg', price: 1000000, weight: 0 },
 
-        
         'bape_sec': { id: 'bape_sec', type: 'item', name: 'Секретный Дроп Bape', color: '#ffea00', image: 'https://i.postimg.cc/mrnXBcgj/IMAGE-2026-02-27-17-34-31.jpg', price: 14000000, weight: 0.000000000001, isSecret: true },
         'bape_red1': { id: 'bape_red1', type: 'item', name: 'Коричневый Рюкзак Бейп', color: '#eb4b4b', image: 'https://i.postimg.cc/HxCMwHZW/IMAGE-2026-02-27-17-37-34.jpg', price: 130000, weight: 30 },
         'bape_blu1': { id: 'bape_blu1', type: 'item', name: 'Фиолетовая кофта Бейп', color: '#54a0ff', image: 'https://i.postimg.cc/gjtrTPDh/IMAGE-2026-02-27-17-39-01.jpg', price: 30000, weight: 40 },
@@ -368,7 +364,7 @@
             id: 'money_case', 
             name: 'Денежный Кейс', 
             image: 'https://i.postimg.cc/CLCgq1VJ/2026-02-27-09-01-01.jpg',
-            price: 50000, 
+            price: 30000, 
             drops: ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7'] 
         },
         {
@@ -390,13 +386,6 @@
 
     const keysData = [
         { id: 'key_palm', name: 'Ключ Palm Angels', image: 'https://i.postimg.cc/43qLsCFY/IMAGE-2026-02-27-17-06-03.jpg', price: 1000000 }
-    ];
-
-    const bonusPrizes = [
-        { type: 'promo', icon: '🎟️', name: 'Промокод', color: '#0984e3', code: 'BONUS20' },
-        { type: 'promo', icon: '🎟️', name: 'Промокод', color: '#6c5ce7', code: 'LUCKY50' },
-        { type: 'nothing', icon: '💩', name: 'Ничего', color: '#8b8b99' },
-        { type: 'nothing', icon: '💨', name: 'Мимо', color: '#8b8b99' }
     ];
 
     function saveInventory() { db.save('roblox_inv', JSON.stringify(inventory.map(i => ({ id: i.id, invId: String(i.invId), price: i.price })))); }
@@ -593,6 +582,49 @@
         return true;
     }
 
+    function spinBonusWheel() {
+        if (isOpening) return;
+        
+        const btn = document.getElementById('btnBonusSpin');
+        if (btn.innerText === 'Доступно завтра') return;
+        
+        isOpening = true;
+        isBonusMode = true;
+        isStandardCase = false;
+
+        document.getElementById('page-bonus').classList.remove('active');
+        document.getElementById('page-roulette').classList.add('active');
+        document.getElementById('openingCaseName').innerText = "Колесо удачи...";
+
+        const container = document.getElementById('rouletteItems');
+        container.innerHTML = '';
+        
+        const roll = Math.random() * 100;
+        if (roll <= 30) {
+            lastWonItem = { type: 'promo', icon: '🎟️', name: 'Промокод +5%', color: '#0984e3' };
+        } else {
+            lastWonItem = { type: 'nothing', icon: '💨', name: 'Мимо', color: '#8b8b99' };
+        }
+
+        const bonusDisplayItems = [
+            { type: 'promo', icon: '🎟️', name: 'Промокод +5%', color: '#0984e3' },
+            { type: 'nothing', icon: '💨', name: 'Мимо', color: '#8b8b99' },
+            { type: 'nothing', icon: '💩', name: 'Ничего', color: '#8b8b99' }
+        ];
+
+        initRoulette(bonusDisplayItems);
+        
+        db.save('lastBonusSpin', Date.now().toString());
+
+        runRouletteAnimation(lastWonItem, () => {
+            if (lastWonItem.type === 'promo') {
+                showResultModal('Удача на вашей стороне!');
+            } else {
+                showResultModal('Не повезло...');
+            }
+        });
+    }
+
     function renderCases() {
         const grid = document.getElementById('casesGrid');
         grid.innerHTML = '';
@@ -740,7 +772,6 @@
         const possibleDrops = currentPreviewCase.drops.map(id => allItems[id]).filter(item => item !== undefined);
         initRoulette(possibleDrops);
 
-        
         if (currentPreviewCase.id === 'palm_case') {
             if (Math.random() < 0.000000000001) {
                 lastWonItem = JSON.parse(JSON.stringify(allItems['bape_sec']));
@@ -749,7 +780,6 @@
                 lastWonItem = JSON.parse(JSON.stringify(getWeightedRandomItem(nonSecretDrops)));
             }
         } else {
-            
             const roll = Math.random() * 100;
             if (roll <= 1) {
                 const secretDrops = possibleDrops.filter(i => i.isSecret);
@@ -787,7 +817,14 @@
             let randomItem = dropList[Math.floor(Math.random() * dropList.length)];
             if (!randomItem) continue;
             
-            if (isStandardCase && Math.random() < 0.15) randomItem = genericSecretItem;
+            if (isStandardCase && Math.random() < 0.15) {
+                let secItem = genericSecretItem;
+                if (currentPreviewCase) {
+                    let caseSecrets = currentPreviewCase.drops.map(id => allItems[id]).filter(item => item && item.isSecret);
+                    if (caseSecrets.length > 0) secItem = caseSecrets[0];
+                }
+                randomItem = secItem;
+            }
             
             const div = document.createElement('div');
             div.className = 'item';
@@ -828,10 +865,15 @@
             const offsetOptions = [-2, -1, 1, 2];
             const secretIndex = winningIndex + offsetOptions[Math.floor(Math.random() * offsetOptions.length)];
             if (rouletteItems.children[secretIndex]) {
+                let secItem = genericSecretItem;
+                if (currentPreviewCase) {
+                    let caseSecrets = currentPreviewCase.drops.map(id => allItems[id]).filter(item => item && item.isSecret);
+                    if (caseSecrets.length > 0) secItem = caseSecrets[0];
+                }
                 const secretDiv = rouletteItems.children[secretIndex];
-                secretDiv.innerHTML = `<div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%; filter: drop-shadow(0 0 15px ${genericSecretItem.color});">${renderItemIcon(genericSecretItem, true)}</div>`;
-                secretDiv.style.borderBottom = `4px solid ${genericSecretItem.color}`;
-                secretDiv.style.background = `linear-gradient(to top, ${genericSecretItem.color}44, transparent)`;
+                secretDiv.innerHTML = `<div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%; filter: drop-shadow(0 0 15px ${secItem.color});">${renderItemIcon(secItem, true)}</div>`;
+                secretDiv.style.borderBottom = `4px solid ${secItem.color}`;
+                secretDiv.style.background = `linear-gradient(to top, ${secItem.color}44, transparent)`;
             }
         }
 
@@ -866,7 +908,6 @@
         document.getElementById('resultItemName').innerText = lastWonItem.name;
         document.getElementById('resultItemName').style.color = lastWonItem.color;
         
-        
         document.getElementById('resultItemIcon').style.filter = `drop-shadow(0 0 40px ${lastWonItem.color})`;
         
         const infoBlock = document.getElementById('resultItemInfoBlock');
@@ -877,11 +918,15 @@
         const priceNum = lastWonItem.price || 0;
 
         if (lastWonItem.type === 'promo') {
-            infoBlock.innerHTML = `Ваш код: <span style="color: #00b894; font-weight: bold; font-size: 18px;">${lastWonItem.code}</span>`;
-            itemsActions.style.display = 'none'; promoActions.style.display = 'flex'; moneyActions.style.display = 'none';
+            infoBlock.innerHTML = `Вы выиграли одноразовый промокод на <b>+5%</b> к пополнению!`;
+            itemsActions.style.display = 'none'; moneyActions.style.display = 'none';
+            promoActions.style.display = 'flex';
+            promoActions.innerHTML = `<button class="btn btn-success" onclick="claimLuckyPromo()">Забрать в боте</button>`;
         } else if (lastWonItem.type === 'nothing' || lastWonItem.type === 'fail') {
             infoBlock.innerHTML = lastWonItem.type === 'fail' ? `Предмет сгорел.` : `Приходите завтра!`;
-            itemsActions.style.display = 'none'; promoActions.style.display = 'flex'; moneyActions.style.display = 'none';
+            itemsActions.style.display = 'none'; moneyActions.style.display = 'none';
+            promoActions.style.display = 'flex';
+            promoActions.innerHTML = `<button class="btn btn-outline" onclick="finishOpening()">Закрыть</button>`;
         } else if (lastWonItem.type === 'money') {
             infoBlock.innerHTML = `Зачислено: <span style="color: #00b894; font-weight: bold;">${priceNum.toLocaleString('ru-RU')} ₽</span>`;
             itemsActions.style.display = 'none'; promoActions.style.display = 'none'; moneyActions.style.display = 'flex';
@@ -891,6 +936,11 @@
             itemsActions.style.display = 'flex'; promoActions.style.display = 'none'; moneyActions.style.display = 'none';
         }
         openModal('resultModal');
+    }
+
+    function claimLuckyPromo() {
+        tg.openTelegramLink('https://t.me/StockOGCasesBot?start=lucky');
+        finishOpening();
     }
 
     function keepItem() {
@@ -1021,7 +1071,6 @@
 
     function renderCraftInventory() {
         const grid = document.getElementById('craftInventoryGrid'); grid.innerHTML = '';
-        
         const standardInv = inventory.filter(i => !i.isSecret && i.type !== 'money' && i.type !== 'key');
         if (standardInv.length < 3) {
             grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #8b8b99; padding: 20px 0;">Для контракта нужно минимум 3 обычных предмета (Ключи использовать нельзя)</div>'; return;
