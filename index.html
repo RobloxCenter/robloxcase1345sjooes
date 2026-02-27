@@ -26,6 +26,7 @@
         .case-card-price {color:#fdcb6e;font-weight:bold;font-size:14px;background:rgba(253,203,110,0.15);display:inline-block;padding:6px 12px;border-radius:8px;}
         .btn {background:linear-gradient(135deg,#6c5ce7,#a29bfe);border:none;color:white;padding:14px 20px;border-radius:12px;font-weight:bold;font-size:16px;cursor:pointer;width:100%;transition:transform 0.1s;box-shadow:0 4px 15px rgba(108,92,231,0.4); display: flex; align-items: center; justify-content: center; gap: 8px;}
         .btn:active {transform:scale(0.96);}
+        .btn:disabled {opacity: 0.5; cursor: not-allowed; transform: none;}
         .btn-success {background:linear-gradient(135deg,#00b894,#55efc4);box-shadow:0 4px 15px rgba(0,184,148,0.4);}
         .btn-warning {background:linear-gradient(135deg,#fdcb6e,#ffeaa7);box-shadow:0 4px 15px rgba(253,203,110,0.4);color:#2d3436;}
         .btn-primary {background:linear-gradient(135deg,#0984e3,#74b9ff);box-shadow:0 4px 15px rgba(9,132,227,0.4);}
@@ -290,15 +291,25 @@
     }
 
     const db = {
-        save: function(k, v) { if(tg.CloudStorage) tg.CloudStorage.setItem(k, v); else localStorage.setItem(k, v); },
+        save: function(k, v) { 
+            localStorage.setItem(k, v); 
+            if(tg.CloudStorage) {
+                tg.CloudStorage.setItem(k, v); 
+            }
+        },
         load: function(k) {
             return new Promise((res) => {
+                let localVal = localStorage.getItem(k);
                 if(tg.CloudStorage) {
                     tg.CloudStorage.getItem(k, (err, v) => {
-                        if(err||!v) { let l = localStorage.getItem(k); if(l) { db.save(k,l); res(l); } else res(null); }
-                        else res(v);
+                        if(err || !v || v === 'undefined') { 
+                            res(localVal); 
+                        } else {
+                            localStorage.setItem(k, v);
+                            res(v);
+                        }
                     });
-                } else res(localStorage.getItem(k));
+                } else res(localVal);
             });
         }
     };
@@ -317,7 +328,6 @@
     let currentWithdrawItemId = null;
     let userName = "Игрок";
 
-    
     const genericSecretItem = { id: 'secret', type: 'item', icon: '❓', image: '', name: 'Секретный дроп', color: '#ffea00', price: 0, isSecret: true };
 
     const allItems = {
@@ -373,20 +383,10 @@
             image: 'https://i.postimg.cc/3NjKtmt7/IMAGE-2026-02-27-11-14-36.jpg',
             price: 150000,
             drops: ['lux_jean', 'lux_puff', 'lux_rab', 'lux_r1', 'lux_r2', 'lux_b1', 'lux_b2', 'lux_b3', 'lux_b4', 'lux_b5', 'lux_b6', 'lux_b7', 'lux_b8']
-        },
-        {
-            id: 'palm_case',
-            name: 'Кейс Palm Angels',
-            image: 'https://i.postimg.cc/9fZTRvQY/IMAGE-2026-02-27-17-08-01.jpg',
-            price: 3000000,
-            requiredKey: 'key_palm',
-            drops: ['bape_sec', 'bape_red1', 'bape_blu1', 'bape_blu2', 'bape_blu3', 'bape_blu4', 'bape_blu5', 'bape_blu6', 'bape_blu7', 'bape_blu8', 'bape_gry1', 'bape_gry2']
         }
     ];
 
-    const keysData = [
-        { id: 'key_palm', name: 'Ключ Palm Angels', image: 'https://i.postimg.cc/43qLsCFY/IMAGE-2026-02-27-17-06-03.jpg', price: 1000000 }
-    ];
+    const keysData = [];
 
     function saveInventory() { db.save('roblox_inv', JSON.stringify(inventory.map(i => ({ id: i.id, invId: String(i.invId), price: i.price })))); }
     function saveStats() { db.save('roblox_stats', JSON.stringify(stats)); }
@@ -408,7 +408,7 @@
     function renderItemIcon(item, isTape = false) {
         if (!item) return '?';
         
-        if (item.isSecret && item.image) {
+        if (item.isSecret && item.id === 'bape_sec' && item.image) {
             return `<img src="${item.image}" alt="Secret" style="max-width:80%; max-height:80%; border-radius:12px; border: 2px solid ${item.color || '#ffea00'}; box-shadow: 0 0 15px ${item.color || '#ffea00'};">`;
         }
         
@@ -436,6 +436,22 @@
         let savedBalance = await db.load('roblox_balance');
         balance = savedBalance !== null ? parseInt(savedBalance) : 1500;
 
+        const savedInvStr = await db.load('roblox_inv');
+        if (savedInvStr) {
+            inventory = JSON.parse(savedInvStr).map(m => {
+                let baseItem = allItems[m.id];
+                if (baseItem) return { ...baseItem, invId: String(m.invId), price: m.price || baseItem.price || 0 };
+                return null;
+            }).filter(i => i !== null);
+        }
+
+        const savedStatsStr = await db.load('roblox_stats');
+        if (savedStatsStr) {
+            stats = JSON.parse(savedStatsStr);
+            document.getElementById('statOpened').innerText = stats.opened || 0;
+            document.getElementById('statCrafts').innerText = stats.crafts || 0;
+        }
+
         let pendingStr = await db.load('pending_claim');
         if (pendingStr && pendingStr !== 'null') {
             try {
@@ -447,6 +463,8 @@
                     inventory.push({ ...pendingItem, invId: String(Date.now() + Math.random()) });
                     saveInventory();
                     tg.showAlert(`Вы покинули игру до завершения! Предмет "${pendingItem.name}" добавлен в инвентарь.`);
+                } else if (pendingItem.type === 'fail') {
+                    tg.showAlert(`Вы покинули игру во время Апгрейда! К сожалению, шанс не сыграл и ваш предмет сгорел.`);
                 }
                 db.save('pending_claim', 'null');
             } catch (e) {
@@ -476,22 +494,6 @@
         document.getElementById('tgUserName').innerText = userName;
         document.getElementById('userAvatar').innerText = initial;
         document.getElementById('refLink').innerText = `t.me/StockOGCasesBot?start=ref${tg.initDataUnsafe?.user?.id || '123'}`;
-
-        const savedInvStr = await db.load('roblox_inv');
-        if (savedInvStr) {
-            inventory = JSON.parse(savedInvStr).map(m => {
-                let baseItem = allItems[m.id];
-                if (baseItem) return { ...baseItem, invId: String(m.invId), price: m.price || baseItem.price || 0 };
-                return null;
-            }).filter(i => i !== null);
-        }
-
-        const savedStatsStr = await db.load('roblox_stats');
-        if (savedStatsStr) {
-            stats = JSON.parse(savedStatsStr);
-            document.getElementById('statOpened').innerText = stats.opened || 0;
-            document.getElementById('statCrafts').innerText = stats.crafts || 0;
-        }
 
         let returnItemId = urlParams.get('return_item');
         let returnToken = urlParams.get('t');
@@ -643,30 +645,45 @@
     function renderKeys() {
         const grid = document.getElementById('keysGrid');
         grid.innerHTML = '';
+        if (keysData.length === 0) {
+            grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #8b8b99; padding: 20px 0;">В данный момент нет ключей в продаже.</div>';
+            return;
+        }
         keysData.forEach(k => {
             grid.innerHTML += `
-                <div class="case-card" onclick="buyKey('${k.id}')">
+                <div class="case-card">
                     <div class="case-card-img"><img src="${k.image}" style="width:100%; height:100%;"></div>
                     <div class="case-card-title">${k.name}</div>
                     <div class="case-card-price">${k.price.toLocaleString('ru-RU')} ₽</div>
-                    <button class="btn btn-warning" style="margin-top: 10px; padding: 8px;">Купить</button>
+                    <button class="btn btn-warning" style="margin-top: 10px; padding: 8px;" onclick="buyKey('${k.id}', this)">Купить</button>
                 </div>
             `;
         });
     }
 
-    function buyKey(keyId) {
+    function buyKey(keyId, btn) {
+        if (btn.disabled) return;
         const keyItem = allItems[keyId];
+        
         if (balance < keyItem.price) {
             alert('Недостаточно средств для покупки ключа!');
             return;
         }
+        
         if(confirm(`Купить ${keyItem.name} за ${keyItem.price.toLocaleString('ru-RU')} ₽?`)) {
+            btn.disabled = true;
+            let oldText = btn.innerText;
+            btn.innerText = 'Сохранение...';
+            
             balance -= keyItem.price;
             updateBalanceUI();
             inventory.push({ ...keyItem, invId: String(Date.now() + Math.random()) });
             saveInventory();
-            alert('Ключ успешно куплен и добавлен в инвентарь!');
+            
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerText = oldText;
+            }, 600);
         }
     }
 
@@ -709,9 +726,13 @@
         dropsObjects.forEach(item => {
             let displayContent = '';
             if (item.isSecret) {
-                const displayIcon = item.image ? `<img src="${item.image}">` : `<div style="font-size: 36px; margin: 10px 0; color: ${item.color};">❓</div>`;
-                displayContent = `${displayIcon}
-                                  <div style="font-size: 11px; font-weight: bold; color: ${item.color}; margin-top:5px;">Секретный дроп</div>`;
+                if (item.id === 'bape_sec' && item.image) {
+                    displayContent = `<img src="${item.image}" style="max-width: 60px; max-height: 60px; border: 1px solid ${item.color}; box-shadow: 0 0 10px ${item.color};">
+                                      <div style="font-size: 11px; font-weight: bold; color: ${item.color}; margin-top:5px;">Секретный дроп</div>`;
+                } else {
+                    displayContent = `<div style="font-size: 36px; margin: 10px 0; color: ${item.color};">❓</div>
+                                      <div style="font-size: 11px; font-weight: bold; color: ${item.color}; margin-top:5px;">Секретный дроп</div>`;
+                }
             } else if (item.type === 'money') {
                 displayContent = `<div style="font-size: 14px; font-weight: 800; margin: 18px 0; color: ${item.color};">${item.price.toLocaleString('ru-RU')} ₽</div>`;
             } else {
@@ -944,26 +965,31 @@
     }
 
     function keepItem() {
-        if (!lastWonItem) { finishOpening(); return; }
-        inventory.push({ ...lastWonItem, invId: String(Date.now() + Math.random()) });
+        if (!lastWonItem) return;
+        let itemToKeep = lastWonItem;
+        lastWonItem = null; 
+        inventory.push({ ...itemToKeep, invId: String(Date.now() + Math.random()) });
         saveInventory();
         db.save('pending_claim', 'null');
         finishOpening();
     }
 
     function sellFromModal() {
-        if (!lastWonItem) { finishOpening(); return; }
+        if (!lastWonItem) return;
         const priceNum = lastWonItem.price || 0;
+        let name = lastWonItem.name;
+        lastWonItem = null;
         balance += priceNum;
         updateBalanceUI();
         db.save('pending_claim', 'null');
-        sendLog(`💸 Игрок ${userName} продал ${lastWonItem.name} сразу из кейса за ${priceNum.toLocaleString('ru-RU')} ₽`);
+        sendLog(`💸 Игрок ${userName} продал ${name} сразу из кейса за ${priceNum.toLocaleString('ru-RU')} ₽`);
         finishOpening();
     }
     
     function takeMoney() {
-        if (!lastWonItem) { finishOpening(); return; }
+        if (!lastWonItem) return;
         const priceNum = lastWonItem.price || 0;
+        lastWonItem = null;
         balance += priceNum;
         updateBalanceUI();
         db.save('pending_claim', 'null');
