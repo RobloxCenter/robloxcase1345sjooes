@@ -335,38 +335,49 @@
                     val = JSON.stringify(p);
                 }
             } catch(e) {}
-            localStorage.setItem(key, val); 
-            if(tg.CloudStorage) { tg.CloudStorage.setItem(key, val); }
+            
+            try { localStorage.setItem(key, val); } catch(e) {}
+            try { if(tg.CloudStorage) { tg.CloudStorage.setItem(key, val); } } catch(e) {}
         },
         load: function(key) {
             return new Promise((resolve) => {
-                let localVal = localStorage.getItem(key);
+                let localVal = null;
+                try { localVal = localStorage.getItem(key); } catch(e) {}
+                
                 if(tg.CloudStorage) {
                     let resolved = false;
                     let fallback = setTimeout(() => {
                         if(!resolved) { resolved = true; resolve(localVal); }
-                    }, 800);
-                    tg.CloudStorage.getItem(key, (err, cloudVal) => {
-                        if(!resolved) {
-                            resolved = true;
-                            clearTimeout(fallback);
-                            if(err || !cloudVal || cloudVal === 'undefined') { 
-                                resolve(localVal); 
-                            } else { 
-                                let lTs = 0, cTs = 0;
-                                try { if(localVal) { let p = JSON.parse(localVal); if(p && p._ts) lTs = p._ts; } } catch(x){}
-                                try { if(cloudVal) { let p = JSON.parse(cloudVal); if(p && p._ts) cTs = p._ts; } } catch(x){}
-                                if (lTs > cTs) {
-                                    tg.CloudStorage.setItem(key, localVal);
-                                    resolve(localVal);
-                                } else {
-                                    localStorage.setItem(key, cloudVal);
-                                    resolve(cloudVal);
+                    }, 500);
+                    
+                    try {
+                        tg.CloudStorage.getItem(key, (err, cloudVal) => {
+                            if(!resolved) {
+                                resolved = true;
+                                clearTimeout(fallback);
+                                if(err || !cloudVal || cloudVal === 'undefined') { 
+                                    resolve(localVal); 
+                                } else { 
+                                    let lTs = 0, cTs = 0;
+                                    try { if(localVal) { let p = JSON.parse(localVal); if(p && p._ts) lTs = p._ts; } } catch(x){}
+                                    try { if(cloudVal) { let p = JSON.parse(cloudVal); if(p && p._ts) cTs = p._ts; } } catch(x){}
+                                    
+                                    if (lTs > cTs) {
+                                        try { tg.CloudStorage.setItem(key, localVal); } catch(e) {}
+                                        resolve(localVal);
+                                    } else {
+                                        try { localStorage.setItem(key, cloudVal); } catch(e) {}
+                                        resolve(cloudVal);
+                                    }
                                 }
                             }
-                        }
-                    });
-                } else resolve(localVal);
+                        });
+                    } catch (e) {
+                        if(!resolved) { resolved = true; clearTimeout(fallback); resolve(localVal); }
+                    }
+                } else {
+                    resolve(localVal);
+                }
             });
         }
     };
@@ -415,7 +426,6 @@
         'agent_pechen': { id: 'agent_pechen', type: 'agent', name: 'Агент Pechen', color: '#eb4b4b', image: 'https://i.postimg.cc/D0SPxTVm/IMAGE-2026-02-28-18-11-59.jpg', price: 0, weight: 35, buffs: 'Удача: +5% шанс выиграть в Апгрейде.' },
         'agent_150k': { id: 'agent_150k', type: 'money', name: 'Кэшбэк 150 000 ₽', color: '#b0c3d9', price: 150000, weight: 64.796 },
 
-        // НОВЫЙ КЕЙС ОПИУМ
         'opium_key': { id: 'opium_key', type: 'key', name: 'Ключ Опиум', color: '#ffea00', price: 50000, image: 'https://i.postimg.cc/TwBPtkP2/IMAGE-2026-03-01-12-15-31.jpg' },
         'op_mask': { id: 'op_mask', type: 'item', name: 'Маска Пятница 13', color: '#ffea00', image: 'https://i.postimg.cc/cHtxtQB5/IMAGE-2026-03-01-12-17-04.jpg', price: 10000000, weight: 0.001, isSecret: true },
         'op_snow': { id: 'op_snow', type: 'item', name: 'Сноуборд Баленсиага', color: '#ffea00', image: 'https://i.postimg.cc/YShkT1Zj/IMAGE-2026-03-01-12-18-33.jpg', price: 10000000, weight: 0.001, isSecret: true },
@@ -429,29 +439,25 @@
         'op_p2': { id: 'op_p2', type: 'item', name: 'Потрепанные Штаны Баленсиага', color: '#b0c3d9', image: 'https://i.postimg.cc/rpQ0NC4Q/IMAGE-2026-03-01-12-28-00.jpg', price: 25000, weight: 47 },
         'op_p3': { id: 'op_p3', type: 'item', name: 'Линейные Штаны Баленсиага', color: '#b0c3d9', image: 'https://i.postimg.cc/KvPngT0V/IMAGE-2026-03-01-12-29-48.jpg', price: 30000, weight: 45 },
         'op_j1': { id: 'op_j1', type: 'item', name: 'Синяя Джинсовка Баленсиага', color: '#b0c3d9', image: 'https://i.postimg.cc/fRQBGZPm/IMAGE-2026-03-01-12-39_32.jpg', price: 150000, weight: 42 },
-        'op_j2': { id: 'op_j2', type: 'item', name: 'Джинс. Граффити Баленсиага', color: '#b0c3d9', image: 'https://i.postimg.cc/ZRQLVh3h/IMAGE_2026_03_01_12_40_23.jpg', price: 130000, weight: 48 },
+        'op_j2': { id: 'op_j2', type: 'item', name: 'Джинс. Граффити Баленсиага', color: '#b0c3d9', image: 'https://i.postimg.cc/ZRQLVh3h/IMAGE-2026-03-01-12-40_23.jpg', price: 130000, weight: 48 },
         'op_h1': { id: 'op_h1', type: 'item', name: 'Худи Париж Баленсиага', color: '#b0c3d9', image: 'https://i.postimg.cc/8kJ8DpZM/IMAGE-2026-03-01-12-40-59.jpg', price: 50000, weight: 55 },
         'op_t1': { id: 'op_t1', type: 'item', name: 'Белая Футболка Баленсиага', color: '#b0c3d9', image: 'https://i.postimg.cc/BnCkNXnm/IMAGE-2026-03-01-12-41-35.jpg', price: 30000, weight: 60 },
 
-        
         'md_key': { id: 'md_key', type: 'key', name: 'Ключ Модный Дом', color: '#ffea00', price: 50000, image: 'https://i.postimg.cc/fy94j95x/IMAGE-2026-03-01-16-18-35.jpg' },
-        
         'md_sec1': { id: 'md_sec1', type: 'item', name: 'Свитер Мохер Undercover', color: '#ffea00', image: 'https://i.postimg.cc/fb9gPNY9/IMAGE-2026-03-01-16-23-49.jpg', price: 20000000, weight: 0.0001, isSecret: true },
         'md_sec2': { id: 'md_sec2', type: 'item', name: 'Коричн. Футб. Maison Margiela', color: '#ffea00', image: 'https://i.postimg.cc/mk2jTf1R/IMAGE-2026-03-01-16-25-17.jpg', price: 15000000, weight: 0.0001, isSecret: true },
-        
         'md_m1': { id: 'md_m1', type: 'money', name: 'Бонус 1 000 000 ₽', color: '#eb4b4b', price: 1000000, weight: 0.1 },
         'md_m2': { id: 'md_m2', type: 'money', name: 'Бонус 500 000 ₽', color: '#eb4b4b', price: 500000, weight: 0.3 },
         'md_m3': { id: 'md_m3', type: 'money', name: 'Бонус 300 000 ₽', color: '#eb4b4b', price: 300000, weight: 1 },
         'md_m4': { id: 'md_m4', type: 'money', name: 'Бонус 250 000 ₽', color: '#eb4b4b', price: 250000, weight: 8 },
         'md_m5': { id: 'md_m5', type: 'money', name: 'Бонус 200 000 ₽', color: '#eb4b4b', price: 200000, weight: 15 },
         'md_m6': { id: 'md_m6', type: 'money', name: 'Бонус 150 000 ₽', color: '#eb4b4b', price: 150000, weight: 20 },
-        
         'md_i1': { id: 'md_i1', type: 'item', name: 'Худи Череп', color: '#b0c3d9', image: 'https://i.postimg.cc/434xbsqZ/IMAGE-2026-03-01-16-57-46.jpg', price: 55000, weight: 50 },
         'md_i2': { id: 'md_i2', type: 'item', name: 'Коричневое Худи Андер', color: '#b0c3d9', image: 'https://i.postimg.cc/hPF4Z96d/IMAGE-2026-03-01-16-58-21.jpg', price: 60000, weight: 50 },
-        'md_i3': { id: 'md_i3', type: 'item', name: 'Черная Футболка АндерКавер', color: '#b0c3d9', image: 'https://i.postimg.cc/xd7VJQSb/IMAGE-2026-03-01-16-59-47.jpg', price: 45000, weight: 55 },
+        'md_i3': { id: 'md_i3', type: 'item', name: 'Черн. Футболка АндерКавер', color: '#b0c3d9', image: 'https://i.postimg.cc/xd7VJQSb/IMAGE-2026-03-01-16-59-47.jpg', price: 45000, weight: 55 },
         'md_i4': { id: 'md_i4', type: 'item', name: 'Синее Худи Андер "Радар"', color: '#b0c3d9', image: 'https://i.postimg.cc/d0hzKfTJ/IMAGE-2026-03-01-17-00-32.jpg', price: 60000, weight: 45 },
-        'md_i5': { id: 'md_i5', type: 'item', name: 'Черн. Футболка Андер "Яблоко"', color: '#b0c3d9', image: 'https://i.postimg.cc/DwZNqN6x/IMAGE-2026-03-01-17-01-18.jpg', price: 55000, weight: 50 },
-        'md_i6': { id: 'md_i6', type: 'item', name: 'Черн. Футб. с лого АндерКавер', color: '#b0c3d9', image: 'https://i.postimg.cc/tRNv8bm2/IMAGE-2026-03-01-17-01-56.jpg', price: 45000, weight: 60 },
+        'md_i5': { id: 'md_i5', type: 'item', name: 'Черн. Футболка "Яблоко"', color: '#b0c3d9', image: 'https://i.postimg.cc/DwZNqN6x/IMAGE-2026-03-01-17-01-18.jpg', price: 55000, weight: 50 },
+        'md_i6': { id: 'md_i6', type: 'item', name: 'Черн. Футб. лого АндерКавер', color: '#b0c3d9', image: 'https://i.postimg.cc/tRNv8bm2/IMAGE-2026-03-01-17-01-56.jpg', price: 45000, weight: 60 },
         'md_i7': { id: 'md_i7', type: 'item', name: 'Черная Футболка Андер', color: '#b0c3d9', image: 'https://i.postimg.cc/cHMTq7Tt/IMAGE-2026-03-01-17-02-38.jpg', price: 50000, weight: 55 },
         'md_i8': { id: 'md_i8', type: 'item', name: 'Белая Футболка Андер "Кости"', color: '#b0c3d9', image: 'https://i.postimg.cc/0QfGXk2j/IMAGE-2026-03-01-17-03-22.jpg', price: 50000, weight: 55 },
         'md_i9': { id: 'md_i9', type: 'item', name: 'Синяя Футб. С Губкой Андер', color: '#b0c3d9', image: 'https://i.postimg.cc/yNCFVgDj/IMAGE-2026-03-01-17-04-37.jpg', price: 45000, weight: 60 },
@@ -472,7 +478,6 @@
         { id: 'md_key', name: 'Ключ Модный Дом', price: 50000, image: 'https://i.postimg.cc/fy94j95x/IMAGE-2026-03-01-16-18-35.jpg' }
     ];
 
-    
     function updateProfileUI() {
         const statusDiv = document.getElementById('robloxLinkedStatus');
         if (linkedRobloxAcc) {
