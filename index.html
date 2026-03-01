@@ -8,7 +8,9 @@
     <style>
         * {box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
         body {font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background-color:#0d0d12;color:#ffffff;margin:0;padding:0;display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+        
         img { border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); object-fit: cover; }
+        
         .header {display:flex;justify-content:space-between;align-items:center;padding:15px 20px;background:rgba(22,22,28,0.8);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,0.05);z-index:10;}
         .user-info {display:flex;align-items:center;gap:12px;}
         .avatar {width:40px;height:40px;background:linear-gradient(135deg,#6c5ce7,#a29bfe);border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px;box-shadow:0 4px 10px rgba(108,92,231,0.3);}
@@ -57,19 +59,25 @@
         .page.active {display:block;}
         .tab-content {display:none;}
         .tab-content.active {display:block;}
+        
         @keyframes scaleUp { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .modal-overlay {display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);align-items:center;justify-content:center;z-index:200;}
         .modal-content {background:#16161a;padding:30px 25px;border-radius:28px;text-align:center;border:1px solid rgba(255,255,255,0.1);width:90%;max-width:360px;box-shadow:0 25px 50px rgba(0,0,0,0.5);max-height:85vh;overflow-y:auto; transform: scale(0.95); opacity: 0;}
+        
         #resultItemIcon img { max-height: 160px; max-width: 100%; object-fit: contain; }
+        
         .modal-overlay.show .modal-content { animation: scaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         .modal-overlay.show {display:flex;animation:fadeIn 0.2s ease;}
+        
         .drops-list-grid {display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
         .drop-item-card {background:#1f1f25;border:1px solid rgba(255,255,255,0.03);border-radius:12px;padding:10px 5px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center; min-height: 110px;}
         .drop-item-card img { max-width: 60px; max-height: 60px; margin-bottom: 8px;}
         .ref-box {display:flex;align-items:center;background:#1f1f25;border-radius:12px;padding:10px;margin-top:10px;border:1px solid rgba(255,255,255,0.1);}
         .ref-link {flex-grow:1;color:#00b894;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        
         .multi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-height: 40vh; overflow-y: auto; margin-bottom: 20px; padding-right: 5px; }
         .multi-grid img { max-height: 40px; max-width: 100%; object-fit: contain; }
+
         @keyframes fadeIn {from{opacity:0;} to{opacity:1;}}
     </style>
 </head>
@@ -103,19 +111,24 @@
         <div style="padding: 20px; cursor: pointer; color: #8b8b99; font-weight: bold; display: flex; align-items: center; gap: 5px; background: rgba(22,22,28,0.8); border-bottom: 1px solid rgba(255,255,255,0.05);" onclick="switchPage('cases', document.querySelectorAll('.nav-btn')[0])">
             <span style="font-size: 18px;">←</span> Назад в магазин
         </div>
+        
         <div style="width: 100%; padding: 30px 20px; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(108,92,231,0.15) 0%, transparent 70%);">
             <img id="viewCaseImg" src="" style="width: 200px; height: 200px; border-radius: 16px; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.6)); border: 2px solid rgba(255,255,255,0.1);">
         </div>
+        
         <div style="padding: 0 20px; text-align: center;">
             <p style="color: #8b8b99; font-size: 14px; margin-bottom: 15px;">Испытай удачу и получи эксклюзивные предметы!</p>
+            
             <div id="amountSelector" style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 20px;">
                 <button class="btn btn-outline" style="width: 40px; height: 40px; padding: 0; display:flex; align-items:center; justify-content:center; font-size: 20px; border-radius: 12px;" onclick="changeCaseAmount(-1)">-</button>
                 <span id="caseAmount" style="font-size: 22px; font-weight: 800; width: 30px; text-align: center;">1</span>
                 <button class="btn btn-outline" style="width: 40px; height: 40px; padding: 0; display:flex; align-items:center; justify-content:center; font-size: 20px; border-radius: 12px;" onclick="changeCaseAmount(1)">+</button>
                 <button class="btn btn-outline" style="width: auto; height: 40px; padding: 0 12px; font-size: 13px;" onclick="setCaseAmount(10)">MAX</button>
             </div>
+
             <button class="btn btn-primary" id="viewCaseBtn" style="padding: 16px; font-size: 16px;" onclick="confirmOpenCase()">Открыть</button>
         </div>
+        
         <h3 style="margin: 30px 20px 15px; font-size: 18px; color: #fff;">Возможный дроп:</h3>
         <div class="drops-list-grid" id="viewCaseDrops" style="padding: 0 20px;"></div>
     </div>
@@ -315,6 +328,13 @@
 
     const db = {
         save: function(k, v) { 
+            try {
+                let p = JSON.parse(v);
+                if (p && typeof p === 'object' && !Array.isArray(p)) {
+                    p._ts = Date.now();
+                    v = JSON.stringify(p);
+                }
+            } catch(e) {}
             localStorage.setItem(k, v); 
             if(tg.CloudStorage) { tg.CloudStorage.setItem(k, v); }
         },
@@ -326,12 +346,23 @@
                     let fallback = setTimeout(() => {
                         if(!resolved) { resolved = true; res(localVal); }
                     }, 800);
-                    tg.CloudStorage.getItem(k, (err, v) => {
+                    tg.CloudStorage.getItem(k, (err, cloudVal) => {
                         if(!resolved) {
                             resolved = true;
                             clearTimeout(fallback);
-                            if(err || !v || v === 'undefined') { res(localVal); } 
-                            else { localStorage.setItem(k, v); res(v); }
+                            if(err || !cloudVal || cloudVal === 'undefined') { res(localVal); } 
+                            else { 
+                                let lTs = 0, cTs = 0;
+                                try { if(localVal) { let p = JSON.parse(localVal); if(p && p._ts) lTs = p._ts; } } catch(x){}
+                                try { if(cloudVal) { let p = JSON.parse(cloudVal); if(p && p._ts) cTs = p._ts; } } catch(x){}
+                                if (lTs > cTs) {
+                                    tg.CloudStorage.setItem(k, localVal);
+                                    res(localVal);
+                                } else {
+                                    localStorage.setItem(k, cloudVal);
+                                    res(cloudVal);
+                                }
+                            }
                         }
                     });
                 } else res(localVal);
@@ -423,10 +454,7 @@
     }
 
     function openBindModal() {
-        document.getElementById('bindUsernameInput').value = '';
-        document.getElementById('bindStep1').style.display = 'block';
-        document.getElementById('bindStep2').style.display = 'none';
-        openModal('bindModal');
+        document.getElementById('bindUsernameInput').value = ''; document.getElementById('bindStep1').style.display = 'block'; document.getElementById('bindStep2').style.display = 'none'; openModal('bindModal');
     }
 
     function closeBindModal() { clearInterval(bindTimerInt); closeModal('bindModal'); }
@@ -436,21 +464,15 @@
         if (!/^[a-zA-Z0-9_]{3,20}$/.test(nick)) { alert('Некорректный ник Roblox!'); return; }
         bindTargetUsername = nick;
         currentBindPhrase = `${bindWords[Math.floor(Math.random()*bindWords.length)]}-${bindWords[Math.floor(Math.random()*bindWords.length)]}-${bindWords[Math.floor(Math.random()*bindWords.length)]}-${bindWords[Math.floor(Math.random()*bindWords.length)]}`;
-        document.getElementById('bindPhraseDisplay').innerText = currentBindPhrase;
-        document.getElementById('bindStep1').style.display = 'none';
-        document.getElementById('bindStep2').style.display = 'block';
+        document.getElementById('bindPhraseDisplay').innerText = currentBindPhrase; document.getElementById('bindStep1').style.display = 'none'; document.getElementById('bindStep2').style.display = 'block';
         bindTimeLeft = 180; updateBindTimer(); clearInterval(bindTimerInt);
         bindTimerInt = setInterval(() => { bindTimeLeft--; updateBindTimer(); if (bindTimeLeft <= 0) { clearInterval(bindTimerInt); alert("Время вышло! Начните привязку заново."); closeBindModal(); } }, 1000);
     }
 
-    function updateBindTimer() {
-        let m = Math.floor(bindTimeLeft / 60); let s = bindTimeLeft % 60;
-        document.getElementById('bindTimerDisplay').innerText = `0${m}:${s < 10 ? '0'+s : s}`;
-    }
+    function updateBindTimer() { let m = Math.floor(bindTimeLeft / 60); let s = bindTimeLeft % 60; document.getElementById('bindTimerDisplay').innerText = `0${m}:${s < 10 ? '0'+s : s}`; }
 
     async function verifyRobloxAcc() {
-        const btn = document.getElementById('btnVerifyRoblox');
-        btn.disabled = true; btn.innerText = 'Проверка... (может занять 10-20 сек)';
+        const btn = document.getElementById('btnVerifyRoblox'); btn.disabled = true; btn.innerText = 'Проверка... (может занять 10-20 сек)';
         try {
             const urls = ['https://users.roproxy.com/v1/usernames/users', 'https://corsproxy.io/?https://users.roblox.com/v1/usernames/users'];
             let userId = null;
@@ -461,19 +483,11 @@
                 } catch(e) {}
             }
             if (!userId) { alert('Сбой соединения с серверами Roblox или ник не найден. Попробуйте снова!'); btn.disabled = false; btn.innerText = 'Я указал фразу'; return; }
-
             const descUrls = [`https://users.roproxy.com/v1/users/${userId}`, `https://corsproxy.io/?https://users.roblox.com/v1/users/${userId}`];
             let desc = null;
-            for (let url of descUrls) {
-                try { let r = await fetch(url); if (r.ok) { let d = await r.json(); desc = d.description || ""; break; } } catch(e) {}
-            }
-
-            if (desc !== null && desc.includes(currentBindPhrase)) {
-                linkedRobloxAcc = bindTargetUsername; saveAllData(); alert('✅ Аккаунт успешно привязан!'); closeBindModal(); updateProfileUI();
-            } else {
-                alert('❌ Фраза не найдена в описании профиля! Убедитесь, что вы сохранили описание в Roblox, подождите пару секунд и попробуйте нажать кнопку еще раз.');
-                btn.disabled = false; btn.innerText = 'Я указал фразу';
-            }
+            for (let url of descUrls) { try { let r = await fetch(url); if (r.ok) { let d = await r.json(); desc = d.description || ""; break; } } catch(e) {} }
+            if (desc !== null && desc.includes(currentBindPhrase)) { linkedRobloxAcc = bindTargetUsername; saveAllData(); alert('✅ Аккаунт успешно привязан!'); closeBindModal(); updateProfileUI();
+            } else { alert('❌ Фраза не найдена в описании профиля! Убедитесь, что вы сохранили описание в Roblox, подождите пару секунд и попробуйте нажать кнопку еще раз.'); btn.disabled = false; btn.innerText = 'Я указал фразу'; }
         } catch (err) { alert('Критическая ошибка проверки. Попробуйте позже.'); btn.disabled = false; btn.innerText = 'Я указал фразу'; }
     }
 
@@ -487,34 +501,18 @@
         else { document.getElementById('tgUserStatus').innerText = 'Новичок'; document.getElementById('tgUserStatus').style.color = '#8b8b99'; }
     }
 
-    function fireAgent(invId, name) {
-        if (confirm(`Вы уверены, что хотите уволить ${name}? Это действие нельзя отменить, и агент исчезнет навсегда.`)) {
-            inventory = inventory.filter(i => String(i.invId) !== String(invId));
-            saveAllData(); renderInventory(); updateAgentStatus(); alert(`${name} успешно уволен!`);
-        }
-    }
+    function fireAgent(invId, name) { if (confirm(`Вы уверены, что хотите уволить ${name}? Это действие нельзя отменить, и агент исчезнет навсегда.`)) { inventory = inventory.filter(i => String(i.invId) !== String(invId)); saveAllData(); renderInventory(); updateAgentStatus(); alert(`${name} успешно уволен!`); } }
 
-    function saveAllData() {
-        try {
-            const data = { balance: balance, stats: stats, linkedAcc: linkedRobloxAcc, inventory: inventory.map(i => ({ id: i.id, invId: String(i.invId), price: i.price })) };
-            db.save('roblox_save_v2', JSON.stringify(data));
-        } catch(e) {}
-    }
+    function saveAllData() { try { const data = { balance: balance, stats: stats, linkedAcc: linkedRobloxAcc, inventory: inventory.map(i => ({ id: i.id, invId: String(i.invId), price: i.price })) }; db.save('roblox_save_v2', JSON.stringify(data)); } catch(e) {} }
 
     function updateBalanceUI() { document.getElementById('balanceAmount').innerText = balance.toLocaleString('ru-RU'); saveAllData(); }
 
     function getWeightedRandomItem(dropList, isZixxtoActive = false) {
         let list = dropList;
-        if (isZixxtoActive && Math.random() < 0.2) { 
-            list = dropList.map(item => { let w = item.weight || 1; if (item.isSecret || item.color === '#eb4b4b') w *= 5; return { ...item, weight: w }; });
-        }
+        if (isZixxtoActive && Math.random() < 0.2) { list = dropList.map(item => { let w = item.weight || 1; if (item.isSecret || item.color === '#eb4b4b') w *= 5; return { ...item, weight: w }; }); }
         let totalWeight = list.reduce((sum, item) => sum + (item.weight || 1), 0);
         let random = Math.random() * totalWeight;
-        for (let i = 0; i < list.length; i++) {
-            if (random < (list[i].weight || 1)) return dropList[i];
-            random -= (list[i].weight || 1);
-        }
-        return dropList[0];
+        for (let i = 0; i < list.length; i++) { if (random < (list[i].weight || 1)) return dropList[i]; random -= (list[i].weight || 1); } return dropList[0];
     }
 
     function renderItemIcon(item, isTape = false) {
@@ -533,9 +531,7 @@
 
     window.onload = async () => {
         let initial = "И";
-        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-            let u = tg.initDataUnsafe.user; if (u.username) userName = "@" + u.username; else userName = u.first_name || u.id.toString(); initial = userName.replace('@', '').charAt(0).toUpperCase();
-        }
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) { let u = tg.initDataUnsafe.user; if (u.username) userName = "@" + u.username; else userName = u.first_name || u.id.toString(); initial = userName.replace('@', '').charAt(0).toUpperCase(); }
         
         try {
             let v2Save = await db.load('roblox_save_v2');
@@ -551,54 +547,31 @@
                 let oldStats = await db.load('roblox_stats'); if (oldStats && oldStats !== 'null') stats = JSON.parse(oldStats);
                 saveAllData(); 
             }
-        } catch (err) {
-            balance = 1500; inventory = []; stats = { opened: 0, crafts: 0 }; saveAllData();
-        }
-        
+        } catch (err) { balance = 1500; inventory = []; stats = { opened: 0, crafts: 0 }; saveAllData(); }
         updateProfileUI();
 
         let pendingStr = await db.load('pending_claim');
         if (pendingStr && pendingStr !== 'null') {
-            try {
-                let pendingItem = JSON.parse(pendingStr);
-                if (pendingItem.type === 'money') { balance += pendingItem.price || 0; tg.showAlert(`Вы покинули игру до завершения! Ваш выигрыш (${pendingItem.name}) был зачислен на баланс.`); }
-                else if (pendingItem.type === 'item' || pendingItem.type === 'agent') { inventory.push({ ...pendingItem, invId: String(Date.now() + Math.random()) }); tg.showAlert(`Вы покинули игру до завершения! Предмет "${pendingItem.name}" добавлен в инвентарь.`); }
-                else if (pendingItem.type === 'fail') { tg.showAlert(`Вы покинули игру во время Апгрейда! К сожалению, шанс не сыграл и ваш предмет сгорел.`); }
-                db.save('pending_claim', 'null'); saveAllData();
-            } catch (e) { db.save('pending_claim', 'null'); }
+            try { let pendingItem = JSON.parse(pendingStr); if (pendingItem.type === 'money') { balance += pendingItem.price || 0; tg.showAlert(`Вы покинули игру до завершения! Ваш выигрыш (${pendingItem.name}) был зачислен на баланс.`); } else if (pendingItem.type === 'item' || pendingItem.type === 'agent') { inventory.push({ ...pendingItem, invId: String(Date.now() + Math.random()) }); tg.showAlert(`Вы покинули игру до завершения! Предмет "${pendingItem.name}" добавлен в инвентарь.`); } else if (pendingItem.type === 'fail') { tg.showAlert(`Вы покинули игру во время Апгрейда! К сожалению, шанс не сыграл и ваш предмет сгорел.`); } db.save('pending_claim', 'null'); saveAllData(); } catch (e) { db.save('pending_claim', 'null'); }
         }
 
         let pendingMultiStr = await db.load('pending_claim_multi');
         if (pendingMultiStr && pendingMultiStr !== 'null') {
-            try {
-                let items = JSON.parse(pendingMultiStr); let moneyAdded = 0; let itemsAdded = 0;
-                items.forEach(item => { if (item.type === 'money') moneyAdded += item.price; else if (item.type !== 'promo') { inventory.push({...item, invId: String(Date.now()+Math.random())}); itemsAdded++; } });
-                balance += moneyAdded; tg.showAlert(`Вы покинули игру во время мульти-открытия! Восстановлено: ${itemsAdded} предметов и ${moneyAdded.toLocaleString('ru-RU')} ₽.`);
-                db.save('pending_claim_multi', 'null'); saveAllData();
-            } catch(e) { db.save('pending_claim_multi', 'null'); }
+            try { let items = JSON.parse(pendingMultiStr); let moneyAdded = 0; let itemsAdded = 0; items.forEach(item => { if (item.type === 'money') moneyAdded += item.price; else if (item.type !== 'promo') { inventory.push({...item, invId: String(Date.now()+Math.random())}); itemsAdded++; } }); balance += moneyAdded; tg.showAlert(`Вы покинули игру во время мульти-открытия! Восстановлено: ${itemsAdded} предметов и ${moneyAdded.toLocaleString('ru-RU')} ₽.`); db.save('pending_claim_multi', 'null'); saveAllData(); } catch(e) { db.save('pending_claim_multi', 'null'); }
         }
 
         const urlParams = new URLSearchParams(window.location.search);
         let topupAmount = urlParams.get('topup_amount'); let topupId = urlParams.get('topup_id');
         if (topupAmount && topupId) {
             let pStr = await db.load('processed_topups'); let processedTopups = pStr ? JSON.parse(pStr) : [];
-            if (!processedTopups.includes(topupId)) {
-                let finalAdd = parseInt(topupAmount);
-                if (hasAgent('agent_vatar') || hasAgent('agent_zixxto')) { let bonus = Math.floor(finalAdd * 0.03); finalAdd += bonus; tg.showAlert(`Бонус от Агента! Вам зачислено дополнительно +${bonus.toLocaleString('ru-RU')} ₽ (Итого: ${finalAdd.toLocaleString('ru-RU')} ₽)`); }
-                else { tg.showAlert(`✅ Ваш баланс успешно пополнен на ${finalAdd.toLocaleString('ru-RU')} ₽!`); }
-                balance += finalAdd; processedTopups.push(topupId); db.save('processed_topups', JSON.stringify(processedTopups)); saveAllData();
-            }
+            if (!processedTopups.includes(topupId)) { let finalAdd = parseInt(topupAmount); if (hasAgent('agent_vatar') || hasAgent('agent_zixxto')) { let bonus = Math.floor(finalAdd * 0.03); finalAdd += bonus; tg.showAlert(`Бонус от Агента! Вам зачислено дополнительно +${bonus.toLocaleString('ru-RU')} ₽ (Итого: ${finalAdd.toLocaleString('ru-RU')} ₽)`); } else { tg.showAlert(`✅ Ваш баланс успешно пополнен на ${finalAdd.toLocaleString('ru-RU')} ₽!`); } balance += finalAdd; processedTopups.push(topupId); db.save('processed_topups', JSON.stringify(processedTopups)); saveAllData(); }
             const url = new URL(window.location); url.searchParams.delete('topup_amount'); url.searchParams.delete('topup_id'); window.history.replaceState({}, document.title, url);
         }
         
         let ungiveAmount = urlParams.get('ungive_amount'); let ungiveId = urlParams.get('ungive_id');
         if (ungiveAmount && ungiveId) {
             let uStr = await db.load('processed_ungives'); let processedUngives = uStr ? JSON.parse(uStr) : [];
-            if (!processedUngives.includes(ungiveId)) {
-                let deduct = parseInt(ungiveAmount); balance -= deduct; if (balance < 0) balance = 0;
-                processedUngives.push(ungiveId); db.save('processed_ungives', JSON.stringify(processedUngives));
-                tg.showAlert(`⚠️ Внимание! Администратор списал с вашего баланса ${deduct.toLocaleString('ru-RU')} ₽.\nТекущий баланс: ${balance.toLocaleString('ru-RU')} ₽`); saveAllData();
-            }
+            if (!processedUngives.includes(ungiveId)) { let deduct = parseInt(ungiveAmount); balance -= deduct; if (balance < 0) balance = 0; processedUngives.push(ungiveId); db.save('processed_ungives', JSON.stringify(processedUngives)); tg.showAlert(`⚠️ Внимание! Администратор списал с вашего баланса ${deduct.toLocaleString('ru-RU')} ₽.\nТекущий баланс: ${balance.toLocaleString('ru-RU')} ₽`); saveAllData(); }
             const url = new URL(window.location); url.searchParams.delete('ungive_amount'); url.searchParams.delete('ungive_id'); window.history.replaceState({}, document.title, url);
         }
 
@@ -607,70 +580,48 @@
         let returnItemId = urlParams.get('return_item'); let returnToken = urlParams.get('t');
         if (returnItemId && returnToken) {
             let pRetStr = await db.load('processed_returns'); let processedReturns = pRetStr ? JSON.parse(pRetStr) : [];
-            if (!processedReturns.includes(returnToken)) {
-                let itemToReturn = allItems[returnItemId];
-                if (itemToReturn) { inventory.push({ ...itemToReturn, invId: String(Date.now() + Math.random()), price: itemToReturn.price }); saveAllData(); processedReturns.push(returnToken); db.save('processed_returns', JSON.stringify(processedReturns)); tg.showAlert(`Предмет "${itemToReturn.name}" успешно возвращен в инвентарь!`); }
-            }
+            if (!processedReturns.includes(returnToken)) { let itemToReturn = allItems[returnItemId]; if (itemToReturn) { inventory.push({ ...itemToReturn, invId: String(Date.now() + Math.random()), price: itemToReturn.price }); saveAllData(); processedReturns.push(returnToken); db.save('processed_returns', JSON.stringify(processedReturns)); tg.showAlert(`Предмет "${itemToReturn.name}" успешно возвращен в инвентарь!`); } }
             const url = new URL(window.location); url.searchParams.delete('return_item'); url.searchParams.delete('t'); window.history.replaceState({}, document.title, url);
         }
-
         renderCases(); renderKeys(); updateBalanceUI(); updateBonusButton();
     };
 
     function startTopupProcess() { alert('Для пополнения баланса закройте это окно и нажмите кнопку "💰 Пополнить баланс" в меню бота!'); tg.close(); }
 
     function switchPage(pageId, btnElement) {
-        if (isOpening) return; 
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById('page-' + pageId).classList.add('active');
+        if (isOpening) return; document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById('page-' + pageId).classList.add('active');
         if (btnElement) { document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); btnElement.classList.add('active'); }
-        if(pageId === 'inventory') renderInventory();
-        if(pageId === 'games') { renderCraftInventory(); updateUpgUI(); }
-        if(pageId === 'bonus') updateBonusButton();
+        if(pageId === 'inventory') renderInventory(); if(pageId === 'games') { renderCraftInventory(); updateUpgUI(); } if(pageId === 'bonus') updateBonusButton();
     }
 
-    function switchShopTab(tabId) {
-        document.getElementById('casesGrid').style.display = tabId === 'cases' ? 'grid' : 'none';
-        document.getElementById('keysGrid').style.display = tabId === 'keys' ? 'grid' : 'none';
-        document.getElementById('btnTabCases').classList.replace(tabId === 'cases' ? 'btn-outline' : 'btn', tabId === 'cases' ? 'btn' : 'btn-outline');
-        document.getElementById('btnTabKeys').classList.replace(tabId === 'keys' ? 'btn-outline' : 'btn', tabId === 'keys' ? 'btn' : 'btn-outline');
-    }
+    function switchShopTab(tabId) { document.getElementById('casesGrid').style.display = tabId === 'cases' ? 'grid' : 'none'; document.getElementById('keysGrid').style.display = tabId === 'keys' ? 'grid' : 'none'; document.getElementById('btnTabCases').classList.replace(tabId === 'cases' ? 'btn-outline' : 'btn', tabId === 'cases' ? 'btn' : 'btn-outline'); document.getElementById('btnTabKeys').classList.replace(tabId === 'keys' ? 'btn-outline' : 'btn', tabId === 'keys' ? 'btn' : 'btn-outline'); }
 
     function switchGameTab(tabId) {
-        if (isOpening) return;
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        document.getElementById('tab-' + tabId).classList.add('active');
-        document.getElementById('btnTabContract').classList.replace('btn', 'btn-outline');
-        document.getElementById('btnTabUpgrade').classList.replace('btn', 'btn-outline');
-        if (tabId === 'contract') { document.getElementById('btnTabContract').classList.replace('btn-outline', 'btn'); renderCraftInventory(); } 
-        else if (tabId === 'upgrade') { document.getElementById('btnTabUpgrade').classList.replace('btn-outline', 'btn'); updateUpgUI(); }
+        if (isOpening) return; document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); document.getElementById('tab-' + tabId).classList.add('active');
+        document.getElementById('btnTabContract').classList.replace('btn', 'btn-outline'); document.getElementById('btnTabUpgrade').classList.replace('btn', 'btn-outline');
+        if (tabId === 'contract') { document.getElementById('btnTabContract').classList.replace('btn-outline', 'btn'); renderCraftInventory(); } else if (tabId === 'upgrade') { document.getElementById('btnTabUpgrade').classList.replace('btn-outline', 'btn'); updateUpgUI(); }
     }
 
     async function updateBonusButton() {
         const btn = document.getElementById('btnBonusSpin'); if (!btn) return false;
-        const lastSpin = await db.load('lastBonusSpin');
-        if (lastSpin) { const diff = Date.now() - parseInt(lastSpin); if (diff < 86400000) { btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed'; btn.innerText = 'Доступно завтра'; return false; } }
+        const lastSpin = await db.load('lastBonusSpin'); if (lastSpin) { const diff = Date.now() - parseInt(lastSpin); if (diff < 86400000) { btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed'; btn.innerText = 'Доступно завтра'; return false; } }
         btn.style.opacity = '1'; btn.style.cursor = 'pointer'; btn.innerText = 'Крутить (Бесплатно)'; return true;
     }
 
     function spinBonusWheel() {
         if (isOpening) return; const btn = document.getElementById('btnBonusSpin'); if (btn.innerText === 'Доступно завтра') return;
         isOpening = true; isBonusMode = true; isStandardCase = false;
-        document.getElementById('page-bonus').classList.remove('active'); document.getElementById('page-roulette').classList.add('active'); document.getElementById('openingCaseName').innerText = "Колесо удачи...";
-        document.getElementById('roulette').style.display = 'block';
-        const container = document.getElementById('rouletteItems'); container.innerHTML = '';
-        const roll = Math.random() * 100;
+        document.getElementById('page-bonus').classList.remove('active'); document.getElementById('page-roulette').classList.add('active'); document.getElementById('openingCaseName').innerText = "Колесо удачи..."; document.getElementById('roulette').style.display = 'block';
+        const container = document.getElementById('rouletteItems'); container.innerHTML = ''; const roll = Math.random() * 100;
         if (roll <= 30) lastWonItem = { type: 'promo', icon: '🎟️', name: 'Промокод +5%', color: '#0984e3' }; else lastWonItem = { type: 'nothing', icon: '💨', name: 'Мимо', color: '#8b8b99' };
         const bonusDisplayItems = [ { type: 'promo', icon: '🎟️', name: 'Промокод +5%', color: '#0984e3' }, { type: 'nothing', icon: '💨', name: 'Мимо', color: '#8b8b99' }, { type: 'nothing', icon: '💩', name: 'Ничего', color: '#8b8b99' } ];
-        initRoulette(bonusDisplayItems); db.save('lastBonusSpin', Date.now().toString());
-        runRouletteAnimation(lastWonItem, () => { if (lastWonItem.type === 'promo') showResultModal('Удача на вашей стороне!'); else showResultModal('Не повезло...'); });
+        initRoulette(bonusDisplayItems); db.save('lastBonusSpin', Date.now().toString()); runRouletteAnimation(lastWonItem, () => { if (lastWonItem.type === 'promo') showResultModal('Удача на вашей стороне!'); else showResultModal('Не повезло...'); });
     }
 
     function renderCases() {
         const grid = document.getElementById('casesGrid'); grid.innerHTML = '';
         casesData.forEach(c => {
-            let finalPrice = getCasePrice(c);
-            const displayImg = c.image ? `<img src="${c.image}" style="width:100%; height:100%;">` : `<div style="font-size:60px;">${c.icon}</div>`;
+            let finalPrice = getCasePrice(c); const displayImg = c.image ? `<img src="${c.image}" style="width:100%; height:100%;">` : `<div style="font-size:60px;">${c.icon}</div>`;
             let priceHTML = `<div class="case-card-price">${finalPrice.toLocaleString('ru-RU')} ₽</div>`;
             if (finalPrice < c.price) priceHTML = `<div class="case-card-price" style="background:rgba(0,184,148,0.15); color:#00b894;"><del style="color:#8b8b99; font-size:11px;">${c.price}</del> ${finalPrice.toLocaleString('ru-RU')} ₽</div>`;
             grid.innerHTML += `<div class="case-card" onclick="openCasePreview('${c.id}')"><div class="case-card-img">${displayImg}</div><div class="case-card-title">${c.name}</div>${priceHTML}</div>`;
@@ -697,10 +648,8 @@
     function closeModal(id) { const m = document.getElementById(id); m.classList.remove('show'); setTimeout(() => m.style.display = 'none', 300); }
 
     function changeCaseAmount(delta) {
-        openAmount += delta; if(openAmount < 1) openAmount = 1; if(openAmount > 10) openAmount = 10;
-        document.getElementById('caseAmount').innerText = openAmount;
-        let finalPrice = getCasePrice(currentPreviewCase) * openAmount;
-        let btnText = `Открыть ${openAmount} шт. за ${finalPrice.toLocaleString('ru-RU')} ₽`;
+        openAmount += delta; if(openAmount < 1) openAmount = 1; if(openAmount > 10) openAmount = 10; document.getElementById('caseAmount').innerText = openAmount;
+        let finalPrice = getCasePrice(currentPreviewCase) * openAmount; let btnText = `Открыть ${openAmount} шт. за ${finalPrice.toLocaleString('ru-RU')} ₽`;
         if (currentPreviewCase.requiredKey) { const reqKeyItem = allItems[currentPreviewCase.requiredKey]; btnText += `<br><span style="font-size: 11px;">Требуется: ${reqKeyItem.name} (${openAmount} шт.)</span>`; }
         document.getElementById('viewCaseBtn').innerHTML = btnText;
     }
@@ -708,15 +657,7 @@
     function setCaseAmount(val) { openAmount = val; changeCaseAmount(0); }
 
     function openCasePreview(caseId) {
-        currentPreviewCase = casesData.find(c => c.id === caseId);
-        document.getElementById('viewCaseImg').src = currentPreviewCase.image || '';
-        openAmount = 1; document.getElementById('caseAmount').innerText = openAmount;
-        document.getElementById('amountSelector').style.display = (caseId === 'agent_case') ? 'none' : 'flex';
-        changeCaseAmount(0);
-        const dropsContainer = document.getElementById('viewCaseDrops'); dropsContainer.innerHTML = '';
-        const tierOrder = { '#ffea00': 0, '#eb4b4b': 1, '#54a0ff': 2, '#b0c3d9': 3 };
-        const dropsObjects = currentPreviewCase.drops.map(id => allItems[id]).filter(i => i !== undefined);
-        dropsObjects.sort((a, b) => { let orderA = tierOrder[a.color] ?? 9; let orderB = tierOrder[b.color] ?? 9; if(orderA !== orderB) return orderA - orderB; return (b.price || 0) - (a.price || 0); });
+        currentPreviewCase = casesData.find(c => c.id === caseId); document.getElementById('viewCaseImg').src = currentPreviewCase.image || ''; openAmount = 1; document.getElementById('caseAmount').innerText = openAmount; document.getElementById('amountSelector').style.display = (caseId === 'agent_case') ? 'none' : 'flex'; changeCaseAmount(0); const dropsContainer = document.getElementById('viewCaseDrops'); dropsContainer.innerHTML = ''; const tierOrder = { '#ffea00': 0, '#eb4b4b': 1, '#54a0ff': 2, '#b0c3d9': 3 }; const dropsObjects = currentPreviewCase.drops.map(id => allItems[id]).filter(i => i !== undefined); dropsObjects.sort((a, b) => { let orderA = tierOrder[a.color] ?? 9; let orderB = tierOrder[b.color] ?? 9; if(orderA !== orderB) return orderA - orderB; return (b.price || 0) - (a.price || 0); });
         dropsObjects.forEach(item => {
             let displayContent = '';
             if (item.isSecret) displayContent = `<div style="font-size: 36px; margin: 10px 0; color: ${item.color};">❓</div><div style="font-size: 11px; font-weight: bold; color: ${item.color}; margin-top:5px;">Секретный дроп</div>`;
@@ -729,29 +670,21 @@
     }
 
     function confirmOpenCase() {
-        if (isOpening) return;
-        let finalPrice = getCasePrice(currentPreviewCase) * openAmount;
-        if (balance < finalPrice) { alert('Недостаточно средств на балансе!'); return; }
+        if (isOpening) return; let finalPrice = getCasePrice(currentPreviewCase) * openAmount; if (balance < finalPrice) { alert('Недостаточно средств на балансе!'); return; }
         if (currentPreviewCase.id === 'agent_case' && getAnyAgent()) { alert('У вас уже есть активный агент! Увольте его в инвентаре, чтобы нанять нового.'); return; }
         if (currentPreviewCase.requiredKey) { const reqKeyObj = allItems[currentPreviewCase.requiredKey]; let requiredKeys = inventory.filter(i => i.id === currentPreviewCase.requiredKey); if (requiredKeys.length < openAmount) { alert(`Недостаточно ключей! Вам нужно ${openAmount} шт. ${reqKeyObj.name}.`); return; } if (!confirm(`Открыть ${openAmount} кейсов за ${finalPrice.toLocaleString('ru-RU')} ₽ и использовать ${openAmount} ключей?`)) return; }
         
         isOpening = true; isStandardCase = true; isBonusMode = false; balance -= finalPrice;
         if (currentPreviewCase.requiredKey) { let keysRemoved = 0; inventory = inventory.filter(i => { if (i.id === currentPreviewCase.requiredKey && keysRemoved < openAmount) { keysRemoved++; return false; } return true; }); saveAllData(); }
         stats.opened += openAmount; updateBalanceUI(); document.getElementById('statOpened').innerText = stats.opened; saveAllData();
-        
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById('page-roulette').classList.add('active');
-        const possibleDrops = currentPreviewCase.drops.map(id => allItems[id]).filter(item => item !== undefined);
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById('page-roulette').classList.add('active'); const possibleDrops = currentPreviewCase.drops.map(id => allItems[id]).filter(item => item !== undefined);
         
         if (openAmount === 1) {
             document.getElementById('roulette').style.display = 'block'; document.getElementById('openingCaseName').innerText = `Открываем ${currentPreviewCase.name}...`; initRoulette(possibleDrops);
-            lastWonItem = JSON.parse(JSON.stringify(getWeightedRandomItem(possibleDrops, hasAgent('agent_zixxto'))));
-            if (!lastWonItem.price) lastWonItem.price = 0; db.save('pending_claim', JSON.stringify(lastWonItem));
-            runRouletteAnimation(lastWonItem, () => { if (lastWonItem.isSecret) showResultModal('ДЖЕКПОТ!'); else showResultModal('Ваш выигрыш!'); });
+            lastWonItem = JSON.parse(JSON.stringify(getWeightedRandomItem(possibleDrops, hasAgent('agent_zixxto')))); if (!lastWonItem.price) lastWonItem.price = 0; db.save('pending_claim', JSON.stringify(lastWonItem)); runRouletteAnimation(lastWonItem, () => { if (lastWonItem.isSecret) showResultModal('ДЖЕКПОТ!'); else showResultModal('Ваш выигрыш!'); });
         } else {
             document.getElementById('roulette').style.display = 'none'; document.getElementById('openingCaseName').innerHTML = `Открываем ${openAmount}x ${currentPreviewCase.name}...<br><br><span style="font-size: 16px; color: #8b8b99;">Генерация предметов ⚙️</span>`; multiWonItems = [];
-            for(let i=0; i<openAmount; i++) { let item = JSON.parse(JSON.stringify(getWeightedRandomItem(possibleDrops, hasAgent('agent_zixxto')))); if (!item.price) item.price = 0; multiWonItems.push(item); }
-            db.save('pending_claim_multi', JSON.stringify(multiWonItems));
-            setTimeout(() => { document.getElementById('openingCaseName').innerText = "Открываем..."; showMultiResultModal(openAmount); }, 1200);
+            for(let i=0; i<openAmount; i++) { let item = JSON.parse(JSON.stringify(getWeightedRandomItem(possibleDrops, hasAgent('agent_zixxto')))); if (!item.price) item.price = 0; multiWonItems.push(item); } db.save('pending_claim_multi', JSON.stringify(multiWonItems)); setTimeout(() => { document.getElementById('openingCaseName').innerText = "Открываем..."; showMultiResultModal(openAmount); }, 1200);
         }
     }
 
@@ -773,8 +706,7 @@
         if (winDiv) { winDiv.style.borderBottom = `4px solid ${winningItem.color}`; winDiv.style.background = `linear-gradient(to top, ${winningItem.color}66, transparent)`; if (winningItem.type === 'promo' || winningItem.type === 'nothing') winDiv.innerHTML = `<div style="font-size: 40px;">${winningItem.icon}</div><div class="item-text" style="color:${winningItem.color}">${winningItem.name}</div>`; else if (winningItem.type === 'money') winDiv.innerHTML = `<div style="font-size: 16px; font-weight: 800; color:${winningItem.color}">${(winningItem.price||0).toLocaleString('ru-RU')} ₽</div>`; else winDiv.innerHTML = `<div style="filter: drop-shadow(0 0 15px ${winningItem.color}); display:flex; justify-content:center; align-items:center; width:100%; height:100%;">${renderItemIcon(winningItem, true)}</div>`; }
         if (isStandardCase && Math.random() < 0.15 && currentPreviewCase.id !== 'agent_case') { const offsetOptions = [-2, -1, 1, 2]; const secretIndex = winningIndex + offsetOptions[Math.floor(Math.random() * offsetOptions.length)]; if (rouletteItems.children[secretIndex]) { let secItem = genericSecretItem; if (currentPreviewCase) { let caseSecrets = currentPreviewCase.drops.map(id => allItems[id]).filter(item => item && item.isSecret); if (caseSecrets.length > 0) secItem = caseSecrets[0]; } const secretDiv = rouletteItems.children[secretIndex]; secretDiv.innerHTML = `<div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%; filter: drop-shadow(0 0 15px ${secItem.color});">${renderItemIcon(secItem, true)}</div>`; secretDiv.style.borderBottom = `4px solid ${secItem.color}`; secretDiv.style.background = `linear-gradient(to top, ${secItem.color}44, transparent)`; } }
         const itemWidth = 140; const rouletteWidth = document.getElementById('roulette').offsetWidth; const finalOffset = (winningIndex * itemWidth) - (rouletteWidth / 2) + (itemWidth / 2) + (Math.floor(Math.random() * 80) - 40);
-        rouletteItems.style.transition = 'none'; rouletteItems.style.transform = 'translateX(0)'; 
-        requestAnimationFrame(() => { requestAnimationFrame(() => { rouletteItems.style.transition = 'transform 5.5s cubic-bezier(0.1, 0.9, 0.1, 1)'; rouletteItems.style.transform = `translateX(-${finalOffset}px)`; }); });
+        rouletteItems.style.transition = 'none'; rouletteItems.style.transform = 'translateX(0)'; requestAnimationFrame(() => { requestAnimationFrame(() => { rouletteItems.style.transition = 'transform 5.5s cubic-bezier(0.1, 0.9, 0.1, 1)'; rouletteItems.style.transform = `translateX(-${finalOffset}px)`; }); });
         setTimeout(() => { if(winDiv) { winDiv.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'; winDiv.style.transform = 'scale(1.15)'; winDiv.style.zIndex = '10'; } }, 5000); setTimeout(callback, 5700);
     }
 
@@ -785,44 +717,23 @@
         else if (lastWonItem.type === 'nothing' || lastWonItem.type === 'fail') { infoBlock.innerHTML = lastWonItem.type === 'fail' ? `Предмет сгорел.` : `Приходите завтра!`; itemsActions.innerHTML = `<button class="btn btn-outline" onclick="finishOpening()">Закрыть</button>`; } 
         else if (lastWonItem.type === 'money') { infoBlock.innerHTML = `Зачислено: <span style="color: #00b894; font-weight: bold;">${priceNum.toLocaleString('ru-RU')} ₽</span>`; itemsActions.innerHTML = `<button class="btn btn-success" onclick="takeMoney(this)">💰 Забрать деньги на баланс</button>`; } 
         else if (lastWonItem.type === 'agent') { infoBlock.innerHTML = `<span style="color: #00b894; font-weight: bold;">Уникальные баффы:</span><br><span style="font-size:12px; line-height: 1.5;">${lastWonItem.buffs.replace(/\n/g, '<br>')}</span>`; itemsActions.innerHTML = `<button class="btn btn-success" onclick="keepItem(this)">💼 Нанять агента</button>`; } 
-        else { 
-            if (hasAgent('agent_perfecto')) priceNum = Math.floor(priceNum * 1.10); let buffText = hasAgent('agent_perfecto') ? `<br><span style="color:#00b894; font-size:11px;">(Сработал бафф Продавец +10%)</span>` : ''; 
-            infoBlock.innerHTML = `Цена продажи: <span style="color: #fdcb6e; font-weight: bold;">${priceNum.toLocaleString('ru-RU')} ₽</span>${buffText}`; 
-            itemsActions.innerHTML = `<button class="btn btn-success" onclick="keepItem(this)">🎒 В инвентарь</button> <button class="btn btn-outline" onclick="sellFromModal(this)">💰 Продать за ${priceNum.toLocaleString('ru-RU')} ₽</button>`;
-        }
+        else { if (hasAgent('agent_perfecto')) priceNum = Math.floor(priceNum * 1.10); let buffText = hasAgent('agent_perfecto') ? `<br><span style="color:#00b894; font-size:11px;">(Сработал бафф Продавец +10%)</span>` : ''; infoBlock.innerHTML = `Цена продажи: <span style="color: #fdcb6e; font-weight: bold;">${priceNum.toLocaleString('ru-RU')} ₽</span>${buffText}`; itemsActions.innerHTML = `<button class="btn btn-success" onclick="keepItem(this)">🎒 В инвентарь</button> <button class="btn btn-outline" onclick="sellFromModal(this)">💰 Продать за ${priceNum.toLocaleString('ru-RU')} ₽</button>`; }
         openModal('resultModal');
     }
 
     function showMultiResultModal(amount) {
         let totalValue = 0; multiWonItems.forEach(item => { if (item.type === 'money') totalValue += item.price; else { let sellPrice = item.price; if (hasAgent('agent_perfecto')) sellPrice = Math.floor(sellPrice * 1.10); totalValue += sellPrice; } });
-        document.getElementById('multiCaseCount').innerText = amount; document.getElementById('multiTotalValue').innerText = totalValue.toLocaleString('ru-RU') + ' ₽';
-        const grid = document.getElementById('multiResultGrid'); grid.innerHTML = '';
+        document.getElementById('multiCaseCount').innerText = amount; document.getElementById('multiTotalValue').innerText = totalValue.toLocaleString('ru-RU') + ' ₽'; const grid = document.getElementById('multiResultGrid'); grid.innerHTML = '';
         multiWonItems.forEach((item) => { let nameHtml = `<div style="color: ${item.color}; font-size: 10px; font-weight: bold; margin-top: 5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</div>`; if(item.type === 'money') nameHtml = `<div style="color: ${item.color}; font-size: 11px; font-weight: bold; margin-top: 5px;">${item.price.toLocaleString('ru-RU')} ₽</div>`; grid.innerHTML += `<div style="background: #1f1f25; border-radius: 12px; padding: 10px 5px; text-align: center; border: 1px solid rgba(255,255,255,0.05); border-top: 3px solid ${item.color}; display:flex; flex-direction:column; justify-content:center;"><div style="height: 45px; display: flex; justify-content: center; align-items: center; font-size: 24px;">${renderItemIcon(item)}</div>${nameHtml}</div>`; });
-        document.getElementById('multiActionsContainer').innerHTML = `<button class="btn btn-success" onclick="keepMultiItems(this)">🎒 Забрать всё в инвентарь</button> <button class="btn btn-outline" onclick="sellMultiItems(this)">💰 Продать всё</button>`;
-        openModal('multiResultModal');
+        document.getElementById('multiActionsContainer').innerHTML = `<button class="btn btn-success" onclick="keepMultiItems(this)">🎒 Забрать всё в инвентарь</button> <button class="btn btn-outline" onclick="sellMultiItems(this)">💰 Продать всё</button>`; openModal('multiResultModal');
     }
 
-    function keepMultiItems(btn) { 
-        if (btn) btn.disabled = true; if (multiWonItems.length === 0) return; 
-        let moneyAdded = 0; let itemsAdded = 0; 
-        multiWonItems.forEach(item => { if (item.type === 'money') moneyAdded += item.price; else if (item.type !== 'promo') { inventory.push({ ...item, invId: String(Date.now() + Math.random()) }); itemsAdded++; } }); 
-        multiWonItems = []; balance += moneyAdded; if(moneyAdded > 0) tg.showAlert(`Предметы добавлены в инвентарь!\nЗачислено на баланс: ${moneyAdded.toLocaleString('ru-RU')} ₽`); 
-        updateBalanceUI(); saveAllData(); db.save('pending_claim_multi', 'null'); finishOpening(); 
-    }
-    
-    function sellMultiItems(btn) { 
-        if (btn) btn.disabled = true; if (multiWonItems.length === 0) return; 
-        let totalAdded = 0; 
-        multiWonItems.forEach(item => { if (item.type === 'money') totalAdded += item.price; else if (item.type !== 'promo') { let sellPrice = item.price; if (hasAgent('agent_perfecto')) sellPrice = Math.floor(sellPrice * 1.10); totalAdded += sellPrice; } }); 
-        multiWonItems = []; balance += totalAdded; tg.showAlert(`Вы продали всё и получили ${totalAdded.toLocaleString('ru-RU')} ₽.`); 
-        updateBalanceUI(); db.save('pending_claim_multi', 'null'); finishOpening(); 
-    }
-    
+    function keepMultiItems(btn) { if (btn) btn.disabled = true; if (multiWonItems.length === 0) return; let moneyAdded = 0; let itemsAdded = 0; multiWonItems.forEach(item => { if (item.type === 'money') moneyAdded += item.price; else if (item.type !== 'promo') { inventory.push({ ...item, invId: String(Date.now() + Math.random()) }); itemsAdded++; } }); multiWonItems = []; balance += moneyAdded; if(moneyAdded > 0) tg.showAlert(`Предметы добавлены в инвентарь!\nЗачислено на баланс: ${moneyAdded.toLocaleString('ru-RU')} ₽`); updateBalanceUI(); saveAllData(); db.save('pending_claim_multi', 'null'); finishOpening(); }
+    function sellMultiItems(btn) { if (btn) btn.disabled = true; if (multiWonItems.length === 0) return; let totalAdded = 0; multiWonItems.forEach(item => { if (item.type === 'money') totalAdded += item.price; else if (item.type !== 'promo') { let sellPrice = item.price; if (hasAgent('agent_perfecto')) sellPrice = Math.floor(sellPrice * 1.10); totalAdded += sellPrice; } }); multiWonItems = []; balance += totalAdded; tg.showAlert(`Вы продали всё и получили ${totalAdded.toLocaleString('ru-RU')} ₽.`); updateBalanceUI(); db.save('pending_claim_multi', 'null'); finishOpening(); }
     function claimLuckyPromo(btn) { if (btn) btn.disabled = true; if (!lastWonItem) return; lastWonItem = null; tg.openTelegramLink('https://t.me/StockOGCasesBot?start=lucky'); finishOpening(); }
     function keepItem(btn) { if (btn) btn.disabled = true; if (!lastWonItem) return; let itemToKeep = lastWonItem; lastWonItem = null; inventory.push({ ...itemToKeep, invId: String(Date.now() + Math.random()) }); saveAllData(); db.save('pending_claim', 'null'); updateAgentStatus(); finishOpening(); }
     function sellFromModal(btn) { if (btn) btn.disabled = true; if (!lastWonItem) return; let priceNum = lastWonItem.price || 0; if (hasAgent('agent_perfecto') && lastWonItem.type !== 'money' && lastWonItem.type !== 'agent' && lastWonItem.type !== 'promo') priceNum = Math.floor(priceNum * 1.10); lastWonItem = null; balance += priceNum; updateBalanceUI(); db.save('pending_claim', 'null'); finishOpening(); }
     function takeMoney(btn) { if (btn) btn.disabled = true; if (!lastWonItem) return; const priceNum = lastWonItem.price || 0; lastWonItem = null; balance += priceNum; updateBalanceUI(); db.save('pending_claim', 'null'); finishOpening(); }
-    
     function finishOpening() { db.save('pending_claim', 'null'); db.save('pending_claim_multi', 'null'); closeModal('resultModal'); closeModal('multiResultModal'); document.getElementById('page-roulette').classList.remove('active'); if(isBonusMode) { document.getElementById('page-bonus').classList.add('active'); updateBonusButton(); } else if(craftSelectedIds.length > 0 || upgMyItem) { document.getElementById('page-games').classList.add('active'); resetCrafting(); upgMyItem = null; updateUpgUI(); } else if(isStandardCase) { document.getElementById('page-case-view').classList.add('active'); } else { document.getElementById('page-cases').classList.add('active'); } isOpening = false; isBonusMode = false; isStandardCase = false; }
 
     function renderInventory() {
@@ -838,33 +749,18 @@
 
     function sellSingleItem(invId, basePrice, btnElement) { 
         if (btnElement) { if (btnElement.disabled) return; btnElement.disabled = true; btnElement.innerText = "⏳"; }
-        const itemIdx = inventory.findIndex(item => String(item.invId) === String(invId));
-        if (itemIdx === -1) return;
-        let finalPrice = basePrice; 
-        if (hasAgent('agent_perfecto')) finalPrice = Math.floor(finalPrice * 1.10); 
-        inventory.splice(itemIdx, 1);
-        balance += finalPrice; updateBalanceUI(); saveAllData(); renderInventory(); 
+        const itemIdx = inventory.findIndex(item => String(item.invId) === String(invId)); if (itemIdx === -1) return; let finalPrice = basePrice; if (hasAgent('agent_perfecto')) finalPrice = Math.floor(finalPrice * 1.10); inventory.splice(itemIdx, 1); balance += finalPrice; updateBalanceUI(); saveAllData(); renderInventory(); 
     }
     
     function openWithdrawModal(invId) {
         if (!linkedRobloxAcc) { alert('Сначала привяжите свой аккаунт Roblox в разделе Профиль!'); return; }
-        const item = inventory.find(i => String(i.invId) === String(invId));
-        if (!item || (item.price || 0) < 150000) { alert("Вывод доступен только для предметов стоимостью от 150 000 ₽!"); return; }
+        const item = inventory.find(i => String(i.invId) === String(invId)); if (!item || (item.price || 0) < 150000) { alert("Вывод доступен только для предметов стоимостью от 150 000 ₽!"); return; }
         currentWithdrawItemId = invId; document.getElementById('wdItemName').innerText = item.name; document.getElementById('wdTargetAcc').innerText = linkedRobloxAcc; openModal('withdrawModal');
     }
 
     function confirmWithdraw() {
         const btn = document.getElementById('wdSubmitBtn'); btn.innerText = 'Отправка...'; btn.disabled = true;
-        setTimeout(() => {
-            const itemIdx = inventory.findIndex(i => String(i.invId) === String(currentWithdrawItemId)); 
-            if (itemIdx === -1) return;
-            const item = inventory[itemIdx];
-            inventory.splice(itemIdx, 1); saveAllData(); renderInventory(); closeModal('withdrawModal');
-            const payloadStr = `${item.id}||${item.price || 0}||${linkedRobloxAcc}`;
-            const payload = btoa(unescape(encodeURIComponent(payloadStr))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-            tg.openTelegramLink(`https://t.me/StockOGCasesBot?start=wd_${payload}`);
-            btn.innerText = 'Подтвердить вывод'; btn.disabled = false;
-        }, 300);
+        setTimeout(() => { const itemIdx = inventory.findIndex(i => String(i.invId) === String(currentWithdrawItemId)); if (itemIdx === -1) return; const item = inventory[itemIdx]; inventory.splice(itemIdx, 1); saveAllData(); renderInventory(); closeModal('withdrawModal'); const payloadStr = `${item.id}||${item.price || 0}||${linkedRobloxAcc}`; const payload = btoa(unescape(encodeURIComponent(payloadStr))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); tg.openTelegramLink(`https://t.me/StockOGCasesBot?start=wd_${payload}`); btn.innerText = 'Подтвердить вывод'; btn.disabled = false; }, 300);
     }
 
     function applyPromo(btn) { const code = document.getElementById('promoInput').value.trim(); if (!code) { alert("Пожалуйста, введите промокод!"); return; } btn.disabled = true; btn.innerText = '...'; tg.openTelegramLink(`https://t.me/StockOGCasesBot?start=promo_${code}`); setTimeout(() => { document.getElementById('promoInput').value = ''; btn.disabled = false; btn.innerText = 'ОК'; }, 2000); }
@@ -880,12 +776,10 @@
     
     function executeCraft() {
         if (craftSelectedIds.length < 3 || isOpening) return; isOpening = true; isStandardCase = false; stats.crafts += 1; document.getElementById('statCrafts').innerText = stats.crafts; saveAllData();
-        inventory = inventory.filter(item => !craftSelectedIds.includes(String(item.invId))); saveAllData(); document.getElementById('page-games').classList.remove('active'); document.getElementById('page-roulette').classList.add('active'); document.getElementById('openingCaseName').innerText = "Контракт...";
-        document.getElementById('roulette').style.display = 'block';
+        inventory = inventory.filter(item => !craftSelectedIds.includes(String(item.invId))); saveAllData(); document.getElementById('page-games').classList.remove('active'); document.getElementById('page-roulette').classList.add('active'); document.getElementById('openingCaseName').innerText = "Контракт..."; document.getElementById('roulette').style.display = 'block';
         let possibleDrops = Object.values(allItems).filter(i => !i.isSecret && i.type === 'item' && i.type !== 'agent');
         if (hasAgent('agent_vovan') || hasAgent('agent_perfecto')) { possibleDrops = possibleDrops.map(item => { let w = item.weight || 1; if ((item.price || 0) > 80000) w *= 3; return { ...item, weight: w }; }); }
-        initRoulette(possibleDrops); const baseWonItem = getWeightedRandomItem(possibleDrops); lastWonItem = JSON.parse(JSON.stringify(baseWonItem)); if (!lastWonItem.price) lastWonItem.price = 0; db.save('pending_claim', JSON.stringify(lastWonItem));
-        runRouletteAnimation(lastWonItem, () => { showResultModal('Контракт выполнен!'); craftSelectedIds = []; });
+        initRoulette(possibleDrops); const baseWonItem = getWeightedRandomItem(possibleDrops); lastWonItem = JSON.parse(JSON.stringify(baseWonItem)); if (!lastWonItem.price) lastWonItem.price = 0; db.save('pending_claim', JSON.stringify(lastWonItem)); runRouletteAnimation(lastWonItem, () => { showResultModal('Контракт выполнен!'); craftSelectedIds = []; });
     }
     function resetCrafting() { craftSelectedIds = []; if(document.getElementById('tab-contract').classList.contains('active')) renderCraftInventory(); }
 
@@ -896,9 +790,7 @@
     function updateUpgUI() { const mySlot = document.getElementById('upg-my-slot'); if (upgMyItem) { mySlot.innerHTML = renderItemIcon(upgMyItem); mySlot.classList.add('filled'); } else { mySlot.innerHTML = '<span style="font-size:12px; color:#8b8b99;">Ваш<br>предмет</span>'; mySlot.classList.remove('filled'); } const targetSlot = document.getElementById('upg-target-slot'); if (upgTargetItem) { targetSlot.innerHTML = renderItemIcon(upgTargetItem); targetSlot.classList.add('filled'); } else { targetSlot.innerHTML = '<span style="font-size:12px; color:#8b8b99;">Желаемый<br>предмет</span>'; targetSlot.classList.remove('filled'); } let chance = 0; if (upgMyItem && upgTargetItem) { let trgP = upgTargetItem.price || 1; let myP = upgMyItem.price || 0; let agentUpgBonus = 0; if (hasAgent('agent_vovan')) agentUpgBonus = 6; else if (hasAgent('agent_cheba') || hasAgent('agent_funky') || hasAgent('agent_pechen')) agentUpgBonus = 5; chance = Math.min((myP / trgP) * 100 * 0.9 + agentUpgBonus, 95); } document.getElementById('upg-chance').innerText = `Шанс: ${chance.toFixed(1)}%`; const btn = document.getElementById('btnUpgrade'); if (upgMyItem && upgTargetItem) { btn.style.opacity = '1'; btn.style.cursor = 'pointer'; } else { btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed'; } }
     
     function executeUpgrade() {
-        if (!upgMyItem || !upgTargetItem || isOpening) return; isOpening = true; isStandardCase = false; let trgP = upgTargetItem.price || 1; let myP = upgMyItem.price || 0; let agentUpgBonus = 0; if (hasAgent('agent_vovan')) agentUpgBonus = 6; else if (hasAgent('agent_cheba') || hasAgent('agent_funky') || hasAgent('agent_pechen')) agentUpgBonus = 5; let chance = Math.min((myP / trgP) * 100 * 0.9 + agentUpgBonus, 95); let roll = Math.random() * 100; let isWin = roll <= chance; inventory = inventory.filter(i => String(i.invId) !== String(upgMyItem.invId)); saveAllData(); document.getElementById('page-games').classList.remove('active'); document.getElementById('page-roulette').classList.add('active'); document.getElementById('openingCaseName').innerText = "Апгрейд..."; 
-        document.getElementById('roulette').style.display = 'block';
-        const r = document.getElementById('rouletteItems'); r.innerHTML = ''; for (let i = 0; i < 70; i++) { let item = (Math.random() < 0.5) ? upgTargetItem : { icon: '❌', color: '#8b8b99' }; const div = document.createElement('div'); div.className = 'item'; div.style.borderBottom = `4px solid ${item.color}`; div.innerHTML = `<div>${renderItemIcon(item)}</div>`; r.appendChild(div); } if (isWin) { lastWonItem = JSON.parse(JSON.stringify(upgTargetItem)); } else { lastWonItem = { id: 'fail', icon: '❌', name: 'ПРОВАЛ', color: '#8b8b99', price: 0, type: 'fail' }; } if (!lastWonItem.price) lastWonItem.price = 0; db.save('pending_claim', JSON.stringify(lastWonItem)); runRouletteAnimation(lastWonItem, () => { if (isWin) { showResultModal('Апгрейд успешен!'); } else { showResultModal('Провал...'); } upgMyItem = null; upgTargetItem = null; }); 
+        if (!upgMyItem || !upgTargetItem || isOpening) return; isOpening = true; isStandardCase = false; let trgP = upgTargetItem.price || 1; let myP = upgMyItem.price || 0; let agentUpgBonus = 0; if (hasAgent('agent_vovan')) agentUpgBonus = 6; else if (hasAgent('agent_cheba') || hasAgent('agent_funky') || hasAgent('agent_pechen')) agentUpgBonus = 5; let chance = Math.min((myP / trgP) * 100 * 0.9 + agentUpgBonus, 95); let roll = Math.random() * 100; let isWin = roll <= chance; inventory = inventory.filter(i => String(i.invId) !== String(upgMyItem.invId)); saveAllData(); document.getElementById('page-games').classList.remove('active'); document.getElementById('page-roulette').classList.add('active'); document.getElementById('openingCaseName').innerText = "Апгрейд..."; document.getElementById('roulette').style.display = 'block'; const r = document.getElementById('rouletteItems'); r.innerHTML = ''; for (let i = 0; i < 70; i++) { let item = (Math.random() < 0.5) ? upgTargetItem : { icon: '❌', color: '#8b8b99' }; const div = document.createElement('div'); div.className = 'item'; div.style.borderBottom = `4px solid ${item.color}`; div.innerHTML = `<div>${renderItemIcon(item)}</div>`; r.appendChild(div); } if (isWin) { lastWonItem = JSON.parse(JSON.stringify(upgTargetItem)); } else { lastWonItem = { id: 'fail', icon: '❌', name: 'ПРОВАЛ', color: '#8b8b99', price: 0, type: 'fail' }; } if (!lastWonItem.price) lastWonItem.price = 0; db.save('pending_claim', JSON.stringify(lastWonItem)); runRouletteAnimation(lastWonItem, () => { if (isWin) { showResultModal('Апгрейд успешен!'); } else { showResultModal('Провал...'); } upgMyItem = null; upgTargetItem = null; }); 
     }
 </script>
 </body>
