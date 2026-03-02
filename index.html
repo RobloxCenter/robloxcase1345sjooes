@@ -91,8 +91,14 @@
             <div style="font-size: 12px; color: #8b8b99;" id="tgUserStatus">Новичок</div>
         </div>
     </div>
-    <div class="balance-container">
-        <span id="balanceAmount">0</span> ₽
+    <div style="display: flex; gap: 8px;">
+        <div class="balance-container" style="background:rgba(253,203,110,0.15); border-color:rgba(253,203,110,0.4); color:#fdcb6e;">
+            <span id="starsAmount">0</span> 
+            <img src="https://i.postimg.cc/vmbvVSvB/IMAGE-2026-03-02-18-13-21.jpg" style="width:18px;height:18px;border:none;margin-left:4px;filter:drop-shadow(0 0 5px rgba(253,203,110,0.5));">
+        </div>
+        <div class="balance-container">
+            <span id="balanceAmount">0</span> ₽
+        </div>
     </div>
 </div>
 
@@ -187,7 +193,20 @@
     </div>
 
     <div id="page-bonus" class="page">
-        <h2 class="section-title">Удача</h2>
+        <h2 class="section-title">Задания</h2>
+        
+        <div class="panel" style="padding: 15px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                <div style="font-size: 15px; font-weight: bold; color: #fdcb6e; display: flex; align-items: center; gap: 6px;">
+                    Мои звезды: <span id="starsCountPanel">0</span> 
+                    <img src="https://i.postimg.cc/vmbvVSvB/IMAGE-2026-03-02-18-13-21.jpg" style="width:20px;height:20px;border:none;">
+                </div>
+                <div style="font-size: 11px; color: #8b8b99; background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 6px;">Сброс в 00:00</div>
+            </div>
+            <div id="questsContainer"></div>
+        </div>
+
+        <h2 class="section-title" style="margin-top: 30px;">Удача</h2>
         <div class="panel">
             <div style="font-size: 70px; margin-bottom: 10px; filter: drop-shadow(0 0 20px rgba(253, 203, 110, 0.5));">🎰</div>
             <h3 style="margin: 0 0 10px 0;">Ежедневная рулетка</h3>
@@ -243,7 +262,7 @@
     <button class="nav-btn active" onclick="switchPage('cases', this)"><div class="nav-icon">📦</div><span>Магазин</span></button>
     <button class="nav-btn" onclick="switchPage('inventory', this)"><div class="nav-icon">🎒</div><span>Инвентарь</span></button>
     <button class="nav-btn" onclick="switchPage('games', this)"><div class="nav-icon">🎮</div><span>Игры</span></button>
-    <button class="nav-btn" onclick="switchPage('bonus', this)"><div class="nav-icon">🎡</div><span>Удача</span></button>
+    <button class="nav-btn" onclick="switchPage('bonus', this)"><div class="nav-icon">⭐</div><span>Квесты</span></button>
     <button class="nav-btn" onclick="switchPage('profile', this)"><div class="nav-icon">👤</div><span>Профиль</span></button>
 </div>
 
@@ -382,7 +401,12 @@
         }
     };
 
-    let balance = 0; let stats = { opened: 0, crafts: 0 }; let inventory = [];
+    let balance = 0; 
+    let stars = 0;
+    let stats = { opened: 0, crafts: 0 }; 
+    let inventory = [];
+    let questsData = { date: '', list: [] };
+
     let isOpening = false; let currentPreviewCase = null; let lastWonItem = null; let multiWonItems = [];
     let openAmount = 1; let craftSelectedIds = []; let upgMyItem = null; let upgTargetItem = null;
     let isBonusMode = false; let isStandardCase = false; let currentWithdrawItemId = null;
@@ -391,6 +415,16 @@
     const bindWords = ['tree','auto','car','boom','cat','dog','sun','moon','star','fire','water','box','house','road','sky'];
 
     const genericSecretItem = { id: 'secret', type: 'item', icon: '❓', image: '', name: 'Секретный дроп', color: '#ffea00', price: 0, isSecret: true };
+
+    const questPool = [
+        { id: 'open_cases', type: 'cases', target: 10, reward: 1, text: 'Открыть 10 любых кейсов' },
+        { id: 'do_contracts', type: 'contracts', target: 3, reward: 2, text: 'Сделать 3 контракта' },
+        { id: 'win_upgrades', type: 'upgrades', target: 2, reward: 2, text: 'Выиграть в Апгрейде 2 раза' },
+        { id: 'sell_items', type: 'sells', target: 500000, reward: 3, text: 'Продать предметы на 500 000 ₽' },
+        { id: 'open_opium', type: 'opium', target: 5, reward: 2, text: 'Открыть 5 кейсов "Опиум"' },
+        { id: 'spin_roulette', type: 'roulette', target: 1, reward: 1, text: 'Покрутить ежедневную рулетку' },
+        { id: 'open_money', type: 'money_case', target: 100, reward: 4, text: 'Открыть 100 Денежных кейсов' }
+    ];
 
     const allItems = {
         'lux_jean': { id: 'lux_jean', type: 'item', name: 'Джинсовка ЛуиВитон', color: '#eb4b4b', image: 'https://i.postimg.cc/GtKWBQMT/IMAGE-2026-02-27-11-16-28.jpg', price: 1250000, weight: parseFloat(atob('MC4x')) },
@@ -475,13 +509,7 @@
         'bape_blu7': { id: 'bape_blu7', type: 'item', name: 'Синие джинсы Бейп', color: '#54a0ff', image: 'https://i.postimg.cc/dVVc0yJF/IMAGE-2026-02-27-17-44-24.jpg', price: 35000, weight: parseFloat(atob('NDA=')) },
         'bape_blu8': { id: 'bape_blu8', type: 'item', name: 'Черные Джинсы Бейп', color: '#54a0ff', image: 'https://i.postimg.cc/3xRzhQZr/IMAGE-2026-02-27-17-45-07.jpg', price: 35000, weight: parseFloat(atob('NDA=')) },
         'bape_gry1': { id: 'bape_gry1', type: 'item', name: 'Синее худи Бейп', color: '#b0c3d9', image: 'https://i.postimg.cc/J4tQ4rSQ/IMAGE-2026-02-27-17-47-00.jpg', price: 15000, weight: parseFloat(atob('NTU=')) },
-        'bape_gry2': { id: 'bape_gry2', type: 'item', name: 'Красная Футболка Бейп', color: '#b0c3d9', image: 'https://i.postimg.cc/VsZjTy5j/IMAGE-2026-02-27-17-47-38.jpg', price: 10000, weight: parseFloat(atob('NjA=')) },
-
-        'spring_key': { id: 'spring_key', type: 'key', name: 'Весенний Ключ', color: '#ffea00', price: 2000000, image: 'https://i.postimg.cc/d156t2ZK/IMAGE-2026-03-01-19-30-16.jpg' },
-        'spring_sec': { id: 'spring_sec', type: 'item', name: 'Секретный Дроп', color: '#ffea00', image: 'https://i.postimg.cc/fb9gPNY9/IMAGE_2026_03_01_16_23_49.jpg', price: 20000000, weight: parseFloat(atob('MC4wMDAx')), isSecret: true },
-        'spring_m1': { id: 'spring_m1', type: 'money', name: 'Бонус 3 000 000 ₽', color: '#eb4b4b', price: 3000000, weight: parseFloat(atob('MQ==')) },
-        'spring_m2': { id: 'spring_m2', type: 'money', name: 'Бонус 2 000 000 ₽', color: '#eb4b4b', price: 2000000, weight: parseFloat(atob('Mg==')) },
-        'spring_m3': { id: 'spring_m3', type: 'money', name: 'Бонус 1 000 000 ₽', color: '#eb4b4b', price: 1000000, weight: parseFloat(atob('Mw==')) }
+        'bape_gry2': { id: 'bape_gry2', type: 'item', name: 'Красная Футболка Бейп', color: '#b0c3d9', image: 'https://i.postimg.cc/VsZjTy5j/IMAGE-2026-02-27-17-47-38.jpg', price: 10000, weight: parseFloat(atob('NjA=')) }
     };
 
     const casesData = [
@@ -489,14 +517,12 @@
         { id: 'lux_case', name: 'Кейс Люкс', image: 'https://i.postimg.cc/3NjKtmt7/IMAGE-2026-02-27-11-14-36.jpg', price: 150000, drops: ['lux_jean', 'lux_puff', 'lux_rab', 'lux_r1', 'lux_r2', 'lux_b1', 'lux_b2', 'lux_b3', 'lux_b4', 'lux_b5', 'lux_b6', 'lux_b7', 'lux_b8', 'lux_rolex', 'lux_balen'] },
         { id: 'opium_case', name: 'Кейс Опиум', requiredKey: 'opium_key', image: 'https://i.postimg.cc/MG4VVmVF/IMAGE-2026-03-01-11-58-15.jpg', price: 150000, drops: ['op_mask', 'op_snow', 'op_shirt', 'op_m1', 'op_m2', 'op_m3', 'op_m4', 'op_puff', 'op_p1', 'op_p2', 'op_p3', 'op_j1', 'op_j2', 'op_h1', 'op_t1'] },
         { id: 'md_case', name: 'Кейс Модный Дом', requiredKey: 'md_key', image: 'https://i.postimg.cc/tg3YDsvs/IMAGE-2026-03-01-16-14-38.jpg', price: 100000, drops: ['md_sec1', 'md_sec2', 'md_m1', 'md_m2', 'md_m3', 'md_m4', 'md_m5', 'md_m6', 'md_i1', 'md_i2', 'md_i3', 'md_i4', 'md_i5', 'md_i6', 'md_i7', 'md_i8', 'md_i9', 'md_i10', 'md_i11'] },
-        { id: 'spring_case', name: 'Весенний Лимит. Кейс', requiredKey: 'spring_key', image: 'https://i.postimg.cc/rw4fCR3G/IMAGE-2026-03-01-19-29-44.jpg', price: 2000000, drops: ['spring_sec', 'spring_m3', 'spring_m2', 'spring_m1', 'bape_red1', 'bape_blu1', 'bape_blu2', 'bape_blu3', 'bape_blu4', 'bape_blu5', 'bape_blu6', 'bape_blu7', 'bape_blu8', 'bape_gry1', 'bape_gry2'] },
-        { id: 'agent_case', name: 'Досье Агентов', image: 'https://i.postimg.cc/fbjWQ4sR/IMAGE_2026_02_28_10_06_11.jpg', price: 1000000, drops: ['agent_vatar', 'agent_zixxto', 'agent_perfecto', 'agent_vovan', 'agent_cheba', 'agent_funky', 'agent_pechen', 'agent_150k'] }
+        { id: 'agent_case', name: 'Досье Агентов', image: 'https://i.postimg.cc/fbjWQ4sR/IMAGE-2026_02_28_10_06_11.jpg', price: 1000000, drops: ['agent_vatar', 'agent_zixxto', 'agent_perfecto', 'agent_vovan', 'agent_cheba', 'agent_funky', 'agent_pechen', 'agent_150k'] }
     ];
 
     const keysData = [
         { id: 'opium_key', name: 'Ключ Опиум', price: 50000, image: 'https://i.postimg.cc/TwBPtkP2/IMAGE-2026-03-01-12-15-31.jpg' },
-        { id: 'md_key', name: 'Ключ Модный Дом', price: 50000, image: 'https://i.postimg.cc/fy94j95x/IMAGE-2026-03-01-16-18-35.jpg' },
-        { id: 'spring_key', name: 'Весенний Ключ', price: 2000000, image: 'https://i.postimg.cc/d156t2ZK/IMAGE-2026-03-01-19-30-16.jpg' }
+        { id: 'md_key', name: 'Ключ Модный Дом', price: 50000, image: 'https://i.postimg.cc/fy94j95x/IMAGE-2026-03-01-16-18-35.jpg' }
     ];
 
     function updateProfileUI() {
@@ -593,14 +619,89 @@
         }
     }
 
+    function checkQuests() {
+        let today = new Date().toLocaleDateString('ru-RU');
+        if (questsData.date !== today) {
+            let shuffled = questPool.sort(() => 0.5 - Math.random());
+            let selected = shuffled.slice(0, 3).map(q => ({ id: q.id, type: q.type, target: q.target, reward: q.reward, text: q.text, progress: 0, claimed: false }));
+            questsData = { date: today, list: selected };
+            saveAllData();
+        }
+        renderQuests();
+    }
+
+    function renderQuests() {
+        const container = document.getElementById('questsContainer');
+        if (!container) return;
+        container.innerHTML = '';
+        
+        questsData.list.forEach((q, index) => {
+            let percent = Math.min((q.progress / q.target) * 100, 100);
+            let btnHTML = '';
+            
+            if (q.claimed) {
+                btnHTML = `<button class="btn btn-outline" style="width: auto; padding: 6px 12px; font-size: 12px; opacity: 0.5;" disabled>Выполнено</button>`;
+            } else if (q.progress >= q.target) {
+                btnHTML = `<button class="btn btn-success" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="claimQuest(${index})">Забрать ${q.reward} ⭐</button>`;
+            } else {
+                let displayProg = q.progress;
+                let displayTarg = q.target;
+                if(q.type === 'sells') {
+                    displayProg = (q.progress / 1000).toFixed(0) + 'к';
+                    displayTarg = (q.target / 1000).toFixed(0) + 'к';
+                }
+                btnHTML = `<div style="font-size: 12px; color: #8b8b99;">${displayProg} / ${displayTarg}</div>`;
+            }
+
+            container.innerHTML += `
+                <div style="background: #1f1f25; border-radius: 12px; padding: 12px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05); text-align: left;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="font-size: 13px; font-weight: bold;">${q.text}</div>
+                        ${btnHTML}
+                    </div>
+                    <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                        <div style="height: 100%; width: ${percent}%; background: #fdcb6e; transition: width 0.3s ease;"></div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function claimQuest(index) {
+        if (questsData.list[index] && questsData.list[index].progress >= questsData.list[index].target && !questsData.list[index].claimed) {
+            questsData.list[index].claimed = true;
+            stars += questsData.list[index].reward;
+            updateBalanceUI();
+            renderQuests();
+            saveAllData();
+        }
+    }
+
+    function addQuestProgress(type, amount) {
+        let changed = false;
+        questsData.list.forEach(q => {
+            if (q.type === type && !q.claimed && q.progress < q.target) {
+                q.progress += amount;
+                if (q.progress > q.target) q.progress = q.target;
+                changed = true;
+            }
+        });
+        if (changed) { saveAllData(); renderQuests(); }
+    }
+
     function saveAllData() {
         try {
-            const data = { balance: balance, stats: stats, linkedAcc: linkedRobloxAcc, inventory: inventory.map(i => ({ id: i.id, invId: String(i.invId), price: i.price })) };
+            const data = { balance: balance, stars: stars, stats: stats, linkedAcc: linkedRobloxAcc, inventory: inventory.map(i => ({ id: i.id, invId: String(i.invId), price: i.price })), questsData: questsData };
             db.save('roblox_save_v2', JSON.stringify(data));
         } catch(e) {}
     }
 
-    function updateBalanceUI() { document.getElementById('balanceAmount').innerText = balance.toLocaleString('ru-RU'); saveAllData(); }
+    function updateBalanceUI() { 
+        document.getElementById('balanceAmount').innerText = balance.toLocaleString('ru-RU'); 
+        if (document.getElementById('starsAmount')) document.getElementById('starsAmount').innerText = stars;
+        if (document.getElementById('starsCountPanel')) document.getElementById('starsCountPanel').innerText = stars;
+        saveAllData(); 
+    }
 
     function getWeightedRandomItem(dropList, isZixxtoActive = false) {
         let list = dropList;
@@ -640,7 +741,11 @@
             let v2Save = await db.load('roblox_save_v2');
             if (v2Save && v2Save !== 'null') {
                 let parsed = JSON.parse(v2Save);
-                balance = parsed.balance || 0; stats = parsed.stats || { opened: 0, crafts: 0 }; linkedRobloxAcc = parsed.linkedAcc || null;
+                balance = parsed.balance || 0; 
+                stars = parsed.stars || 0;
+                stats = parsed.stats || { opened: 0, crafts: 0 }; 
+                linkedRobloxAcc = parsed.linkedAcc || null;
+                questsData = parsed.questsData || { date: '', list: [] };
                 inventory = (parsed.inventory || []).map(m => { let baseItem = allItems[m.id]; if (baseItem) return { ...baseItem, invId: String(m.invId), price: m.price || baseItem.price || 0 }; return null; }).filter(i => i !== null);
             } else {
                 let oldLinked = await db.load('roblox_linked_acc'); if (oldLinked && oldLinked !== 'null') linkedRobloxAcc = oldLinked;
@@ -651,10 +756,11 @@
                 saveAllData(); 
             }
         } catch (err) {
-            balance = 1500; inventory = []; stats = { opened: 0, crafts: 0 }; saveAllData();
+            balance = 1500; stars = 0; inventory = []; stats = { opened: 0, crafts: 0 }; questsData = { date: '', list: [] }; saveAllData();
         }
         
         updateProfileUI();
+        checkQuests();
 
         try {
             let pendingStr = await db.load('pending_claim');
@@ -725,7 +831,7 @@
     function switchPage(pageId, btnElement) {
         if (isOpening) return; document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById('page-' + pageId).classList.add('active');
         if (btnElement) { document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); btnElement.classList.add('active'); }
-        if(pageId === 'inventory') renderInventory(); if(pageId === 'games') { renderCraftInventory(); updateUpgUI(); } if(pageId === 'bonus') updateBonusButton();
+        if(pageId === 'inventory') renderInventory(); if(pageId === 'games') { renderCraftInventory(); updateUpgUI(); } if(pageId === 'bonus') { updateBonusButton(); checkQuests(); }
     }
 
     function switchShopTab(tabId) {
@@ -750,6 +856,9 @@
     function spinBonusWheel() {
         if (isOpening) return; const btn = document.getElementById('btnBonusSpin'); if (btn.innerText === 'Доступно завтра') return;
         isOpening = true; isBonusMode = true; isStandardCase = false;
+        
+        addQuestProgress('roulette', 1);
+
         document.getElementById('page-bonus').classList.remove('active'); document.getElementById('page-roulette').classList.add('active'); document.getElementById('openingCaseName').innerText = "Колесо удачи..."; document.getElementById('roulette').style.display = 'block';
         const container = document.getElementById('rouletteItems'); container.innerHTML = ''; const roll = Math.random() * 100;
         if (roll <= 30) lastWonItem = { type: 'promo', icon: '🎟️', name: 'Промокод +5%', color: '#0984e3' }; else lastWonItem = { type: 'nothing', icon: '💨', name: 'Мимо', color: '#8b8b99' };
@@ -815,31 +924,24 @@
         
         isOpening = true; isStandardCase = true; isBonusMode = false; balance -= finalPrice;
         if (currentPreviewCase.requiredKey) { let keysRemoved = 0; inventory = inventory.filter(i => { if (i.id === currentPreviewCase.requiredKey && keysRemoved < openAmount) { keysRemoved++; return false; } return true; }); saveAllData(); }
+        
+        addQuestProgress('cases', openAmount);
+        if (currentPreviewCase.id === 'opium_case') addQuestProgress('opium', openAmount);
+        if (currentPreviewCase.id === 'money_case') addQuestProgress('money_case', openAmount);
+
         stats.opened += openAmount; updateBalanceUI(); document.getElementById('statOpened').innerText = stats.opened; saveAllData();
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById('page-roulette').classList.add('active'); const possibleDrops = currentPreviewCase.drops.map(id => allItems[id]).filter(item => item !== undefined);
         
         if (openAmount === 1) {
             document.getElementById('roulette').style.display = 'block'; document.getElementById('openingCaseName').innerText = `Открываем ${currentPreviewCase.name}...`; initRoulette(possibleDrops);
             
-            let rolledBape = false;
-            if (currentPreviewCase.id === atob('c3ByaW5nX2Nhc2U=') && Math.random() < parseFloat(atob('MWUtMTI='))) {
-                lastWonItem = JSON.parse(JSON.stringify(allItems[atob('YmFwZV9zZWM=')]));
-                rolledBape = true;
-            }
-            if (!rolledBape) {
-                lastWonItem = JSON.parse(JSON.stringify(getWeightedRandomItem(possibleDrops, hasAgent('agent_zixxto'))));
-            }
+            lastWonItem = JSON.parse(JSON.stringify(getWeightedRandomItem(possibleDrops, hasAgent('agent_zixxto'))));
             
             if (!lastWonItem.price) lastWonItem.price = 0; db.save('pending_claim', JSON.stringify(lastWonItem)); runRouletteAnimation(lastWonItem, () => { if (lastWonItem.isSecret) showResultModal('ДЖЕКПОТ!'); else showResultModal('Ваш выигрыш!'); });
         } else {
             document.getElementById('roulette').style.display = 'none'; document.getElementById('openingCaseName').innerHTML = `Открываем ${openAmount}x ${currentPreviewCase.name}...<br><br><span style="font-size: 16px; color: #8b8b99;">Генерация предметов ⚙️</span>`; multiWonItems = [];
             for(let i=0; i<openAmount; i++) { 
-                let item;
-                if (currentPreviewCase.id === atob('c3ByaW5nX2Nhc2U=') && Math.random() < parseFloat(atob('MWUtMTI='))) {
-                    item = JSON.parse(JSON.stringify(allItems[atob('YmFwZV9zZWM=')]));
-                } else {
-                    item = JSON.parse(JSON.stringify(getWeightedRandomItem(possibleDrops, hasAgent('agent_zixxto'))));
-                }
+                let item = JSON.parse(JSON.stringify(getWeightedRandomItem(possibleDrops, hasAgent('agent_zixxto'))));
                 if (!item.price) item.price = 0; multiWonItems.push(item); 
             } 
             db.save('pending_claim_multi', JSON.stringify(multiWonItems)); setTimeout(() => { document.getElementById('openingCaseName').innerText = "Открываем..."; showMultiResultModal(openAmount); }, 1200);
@@ -887,12 +989,18 @@
     }
 
     function keepMultiItems(btn) { if (btn) btn.disabled = true; if (multiWonItems.length === 0) return; let moneyAdded = 0; let itemsAdded = 0; multiWonItems.forEach(item => { if (item.type === 'money') moneyAdded += item.price; else if (item.type !== 'promo') { inventory.push({ ...item, invId: String(Date.now() + Math.random()) }); itemsAdded++; } }); multiWonItems = []; balance += moneyAdded; if(moneyAdded > 0) tg.showAlert(`Предметы добавлены в инвентарь!\nЗачислено на баланс: ${moneyAdded.toLocaleString('ru-RU')} ₽`); updateBalanceUI(); saveAllData(); db.save('pending_claim_multi', 'null'); finishOpening(); }
-    function sellMultiItems(btn) { if (btn) btn.disabled = true; if (multiWonItems.length === 0) return; let totalAdded = 0; multiWonItems.forEach(item => { if (item.type === 'money') totalAdded += item.price; else if (item.type !== 'promo') { let sellPrice = item.price; if (hasAgent('agent_perfecto')) sellPrice = Math.floor(sellPrice * 1.10); totalAdded += sellPrice; } }); multiWonItems = []; balance += totalAdded; tg.showAlert(`Вы продали всё и получили ${totalAdded.toLocaleString('ru-RU')} ₽.`); updateBalanceUI(); db.save('pending_claim_multi', 'null'); finishOpening(); }
+    function sellMultiItems(btn) { if (btn) btn.disabled = true; if (multiWonItems.length === 0) return; let totalAdded = 0; multiWonItems.forEach(item => { if (item.type === 'money') totalAdded += item.price; else if (item.type !== 'promo') { let sellPrice = item.price; if (hasAgent('agent_perfecto')) sellPrice = Math.floor(sellPrice * 1.10); totalAdded += sellPrice; } }); 
+        addQuestProgress('sells', totalAdded);
+        multiWonItems = []; balance += totalAdded; tg.showAlert(`Вы продали всё и получили ${totalAdded.toLocaleString('ru-RU')} ₽.`); updateBalanceUI(); db.save('pending_claim_multi', 'null'); finishOpening(); 
+    }
     function claimLuckyPromo(btn) { if (btn) btn.disabled = true; if (!lastWonItem) return; lastWonItem = null; tg.openTelegramLink('https://t.me/StockOGCasesBot?start=lucky'); finishOpening(); }
     function keepItem(btn) { if (btn) btn.disabled = true; if (!lastWonItem) return; let itemToKeep = lastWonItem; lastWonItem = null; inventory.push({ ...itemToKeep, invId: String(Date.now() + Math.random()) }); saveAllData(); db.save('pending_claim', 'null'); updateAgentStatus(); finishOpening(); }
-    function sellFromModal(btn) { if (btn) btn.disabled = true; if (!lastWonItem) return; let priceNum = lastWonItem.price || 0; if (hasAgent('agent_perfecto') && lastWonItem.type !== 'money' && lastWonItem.type !== 'agent' && lastWonItem.type !== 'promo') priceNum = Math.floor(priceNum * 1.10); lastWonItem = null; balance += priceNum; updateBalanceUI(); db.save('pending_claim', 'null'); finishOpening(); }
+    function sellFromModal(btn) { if (btn) btn.disabled = true; if (!lastWonItem) return; let priceNum = lastWonItem.price || 0; if (hasAgent('agent_perfecto') && lastWonItem.type !== 'money' && lastWonItem.type !== 'agent' && lastWonItem.type !== 'promo') priceNum = Math.floor(priceNum * 1.10); 
+        addQuestProgress('sells', priceNum);
+        lastWonItem = null; balance += priceNum; updateBalanceUI(); db.save('pending_claim', 'null'); finishOpening(); 
+    }
     function takeMoney(btn) { if (btn) btn.disabled = true; if (!lastWonItem) return; const priceNum = lastWonItem.price || 0; lastWonItem = null; balance += priceNum; updateBalanceUI(); db.save('pending_claim', 'null'); finishOpening(); }
-    function finishOpening() { db.save('pending_claim', 'null'); db.save('pending_claim_multi', 'null'); closeModal('resultModal'); closeModal('multiResultModal'); document.getElementById('page-roulette').classList.remove('active'); if(isBonusMode) { document.getElementById('page-bonus').classList.add('active'); updateBonusButton(); } else if(craftSelectedIds.length > 0 || upgMyItem) { document.getElementById('page-games').classList.add('active'); resetCrafting(); upgMyItem = null; updateUpgUI(); } else if(isStandardCase) { document.getElementById('page-case-view').classList.add('active'); } else { document.getElementById('page-cases').classList.add('active'); } isOpening = false; isBonusMode = false; isStandardCase = false; }
+    function finishOpening() { db.save('pending_claim', 'null'); db.save('pending_claim_multi', 'null'); closeModal('resultModal'); closeModal('multiResultModal'); document.getElementById('page-roulette').classList.remove('active'); if(isBonusMode) { document.getElementById('page-bonus').classList.add('active'); updateBonusButton(); checkQuests(); } else if(craftSelectedIds.length > 0 || upgMyItem) { document.getElementById('page-games').classList.add('active'); resetCrafting(); upgMyItem = null; updateUpgUI(); } else if(isStandardCase) { document.getElementById('page-case-view').classList.add('active'); } else { document.getElementById('page-cases').classList.add('active'); } isOpening = false; isBonusMode = false; isStandardCase = false; }
 
     function renderInventory() {
         const grid = document.getElementById('inventoryGrid'); document.getElementById('invCount').innerText = inventory.length; grid.innerHTML = '';
@@ -907,7 +1015,9 @@
 
     function sellSingleItem(invId, basePrice, btnElement) { 
         if (btnElement) { if (btnElement.disabled) return; btnElement.disabled = true; btnElement.innerText = "⏳"; }
-        const itemIdx = inventory.findIndex(item => String(item.invId) === String(invId)); if (itemIdx === -1) return; let finalPrice = basePrice; if (hasAgent('agent_perfecto')) finalPrice = Math.floor(finalPrice * 1.10); inventory.splice(itemIdx, 1); balance += finalPrice; updateBalanceUI(); saveAllData(); renderInventory(); 
+        const itemIdx = inventory.findIndex(item => String(item.invId) === String(invId)); if (itemIdx === -1) return; let finalPrice = basePrice; if (hasAgent('agent_perfecto')) finalPrice = Math.floor(finalPrice * 1.10); inventory.splice(itemIdx, 1); 
+        addQuestProgress('sells', finalPrice);
+        balance += finalPrice; updateBalanceUI(); saveAllData(); renderInventory(); 
     }
     
     function openWithdrawModal(invId) {
@@ -937,7 +1047,11 @@
         inventory = inventory.filter(item => !craftSelectedIds.includes(String(item.invId))); saveAllData(); document.getElementById('page-games').classList.remove('active'); document.getElementById('page-roulette').classList.add('active'); document.getElementById('openingCaseName').innerText = "Контракт..."; document.getElementById('roulette').style.display = 'block';
         let possibleDrops = Object.values(allItems).filter(i => !i.isSecret && i.type === 'item' && i.type !== 'agent');
         if (hasAgent('agent_vovan') || hasAgent('agent_perfecto')) { possibleDrops = possibleDrops.map(item => { let w = item.weight || 1; if ((item.price || 0) > 80000) w *= 3; return { ...item, weight: w }; }); }
-        initRoulette(possibleDrops); const baseWonItem = getWeightedRandomItem(possibleDrops); lastWonItem = JSON.parse(JSON.stringify(baseWonItem)); if (!lastWonItem.price) lastWonItem.price = 0; db.save('pending_claim', JSON.stringify(lastWonItem)); runRouletteAnimation(lastWonItem, () => { showResultModal('Контракт выполнен!'); craftSelectedIds = []; });
+        initRoulette(possibleDrops); const baseWonItem = getWeightedRandomItem(possibleDrops); lastWonItem = JSON.parse(JSON.stringify(baseWonItem)); if (!lastWonItem.price) lastWonItem.price = 0; db.save('pending_claim', JSON.stringify(lastWonItem)); 
+        runRouletteAnimation(lastWonItem, () => { 
+            addQuestProgress('contracts', 1);
+            showResultModal('Контракт выполнен!'); craftSelectedIds = []; 
+        });
     }
     function resetCrafting() { craftSelectedIds = []; if(document.getElementById('tab-contract').classList.contains('active')) renderCraftInventory(); }
 
@@ -948,7 +1062,16 @@
     function updateUpgUI() { const mySlot = document.getElementById('upg-my-slot'); if (upgMyItem) { mySlot.innerHTML = renderItemIcon(upgMyItem); mySlot.classList.add('filled'); } else { mySlot.innerHTML = '<span style="font-size:12px; color:#8b8b99;">Ваш<br>предмет</span>'; mySlot.classList.remove('filled'); } const targetSlot = document.getElementById('upg-target-slot'); if (upgTargetItem) { targetSlot.innerHTML = renderItemIcon(upgTargetItem); targetSlot.classList.add('filled'); } else { targetSlot.innerHTML = '<span style="font-size:12px; color:#8b8b99;">Желаемый<br>предмет</span>'; targetSlot.classList.remove('filled'); } let chance = 0; if (upgMyItem && upgTargetItem) { let trgP = upgTargetItem.price || 1; let myP = upgMyItem.price || 0; let agentUpgBonus = 0; if (hasAgent('agent_vovan')) agentUpgBonus = 6; else if (hasAgent('agent_cheba') || hasAgent('agent_funky') || hasAgent('agent_pechen')) agentUpgBonus = 5; chance = Math.min((myP / trgP) * 100 * 0.9 + agentUpgBonus, 95); } document.getElementById('upg-chance').innerText = `Шанс: ${chance.toFixed(1)}%`; const btn = document.getElementById('btnUpgrade'); if (upgMyItem && upgTargetItem) { btn.style.opacity = '1'; btn.style.cursor = 'pointer'; } else { btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed'; } }
     
     function executeUpgrade() {
-        if (!upgMyItem || !upgTargetItem || isOpening) return; isOpening = true; isStandardCase = false; let trgP = upgTargetItem.price || 1; let myP = upgMyItem.price || 0; let agentUpgBonus = 0; if (hasAgent('agent_vovan')) agentUpgBonus = 6; else if (hasAgent('agent_cheba') || hasAgent('agent_funky') || hasAgent('agent_pechen')) agentUpgBonus = 5; let chance = Math.min((myP / trgP) * 100 * 0.9 + agentUpgBonus, 95); let roll = Math.random() * 100; let isWin = roll <= chance; inventory = inventory.filter(i => String(i.invId) !== String(upgMyItem.invId)); saveAllData(); document.getElementById('page-games').classList.remove('active'); document.getElementById('page-roulette').classList.add('active'); document.getElementById('openingCaseName').innerText = "Апгрейд..."; document.getElementById('roulette').style.display = 'block'; const r = document.getElementById('rouletteItems'); r.innerHTML = ''; for (let i = 0; i < 70; i++) { let item = (Math.random() < 0.5) ? upgTargetItem : { icon: '❌', color: '#8b8b99' }; const div = document.createElement('div'); div.className = 'item'; div.style.borderBottom = `4px solid ${item.color}`; div.innerHTML = `<div>${renderItemIcon(item)}</div>`; r.appendChild(div); } if (isWin) { lastWonItem = JSON.parse(JSON.stringify(upgTargetItem)); } else { lastWonItem = { id: 'fail', icon: '❌', name: 'ПРОВАЛ', color: '#8b8b99', price: 0, type: 'fail' }; } if (!lastWonItem.price) lastWonItem.price = 0; db.save('pending_claim', JSON.stringify(lastWonItem)); runRouletteAnimation(lastWonItem, () => { if (isWin) { showResultModal('Апгрейд успешен!'); } else { showResultModal('Провал...'); } upgMyItem = null; upgTargetItem = null; }); 
+        if (!upgMyItem || !upgTargetItem || isOpening) return; isOpening = true; isStandardCase = false; let trgP = upgTargetItem.price || 1; let myP = upgMyItem.price || 0; let agentUpgBonus = 0; if (hasAgent('agent_vovan')) agentUpgBonus = 6; else if (hasAgent('agent_cheba') || hasAgent('agent_funky') || hasAgent('agent_pechen')) agentUpgBonus = 5; let chance = Math.min((myP / trgP) * 100 * 0.9 + agentUpgBonus, 95); let roll = Math.random() * 100; let isWin = roll <= chance; inventory = inventory.filter(i => String(i.invId) !== String(upgMyItem.invId)); saveAllData(); document.getElementById('page-games').classList.remove('active'); document.getElementById('page-roulette').classList.add('active'); document.getElementById('openingCaseName').innerText = "Апгрейд..."; document.getElementById('roulette').style.display = 'block'; const r = document.getElementById('rouletteItems'); r.innerHTML = ''; for (let i = 0; i < 70; i++) { let item = (Math.random() < 0.5) ? upgTargetItem : { icon: '❌', color: '#8b8b99' }; const div = document.createElement('div'); div.className = 'item'; div.style.borderBottom = `4px solid ${item.color}`; div.innerHTML = `<div>${renderItemIcon(item)}</div>`; r.appendChild(div); } if (isWin) { lastWonItem = JSON.parse(JSON.stringify(upgTargetItem)); } else { lastWonItem = { id: 'fail', icon: '❌', name: 'ПРОВАЛ', color: '#8b8b99', price: 0, type: 'fail' }; } if (!lastWonItem.price) lastWonItem.price = 0; db.save('pending_claim', JSON.stringify(lastWonItem)); 
+        runRouletteAnimation(lastWonItem, () => { 
+            if (isWin) { 
+                addQuestProgress('upgrades', 1);
+                showResultModal('Апгрейд успешен!'); 
+            } else { 
+                showResultModal('Провал...'); 
+            } 
+            upgMyItem = null; upgTargetItem = null; 
+        }); 
     }
 </script>
 </body>
