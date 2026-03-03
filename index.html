@@ -664,7 +664,7 @@
 
         if (item.isSecret && item.image && item.id !== 'secret') {
             if (isTape) return `<div style="font-size:40px; color:${item.color || '#ffea00'}; filter: drop-shadow(0 0 10px ${item.color || '#ffea00'})">❓</div>`;
-            return `<div style="position:relative; display:flex; align-items:center; justify-content:center; width:100%; height:100%;"><img src="${item.image}" alt="Secret" style="border: 2px solid ${item.color || '#ffea00'}; box-shadow: 0 0 15px ${item.color || '#ffea00'};">${stickerHTML}</div>`;
+            return `<div style="position:relative; display:flex; align-items:center; justify-content:center; width:100%; height:100%;"><img src="${item.image}" alt="Secret" style="border: 2px solid ${item.color || '#ffea00'}; box-shadow: 0 0 15px ${item.color || '#ffea00'}; border-radius:12px;">${stickerHTML}</div>`;
         }
         if (isTape && item.isSecret) return `<div style="font-size:40px; color:${item.color || '#ffea00'}; filter: drop-shadow(0 0 10px ${item.color || '#ffea00'})">❓</div>`;
         if (item.type === 'money' && isTape) return `<div style="font-size: 16px; font-weight: 800; color:${item.color}">${(item.price || 0).toLocaleString('ru-RU')} ₽</div>`;
@@ -692,6 +692,51 @@
                 }).filter(i => i !== null);
             } else { balance = 1500; saveAllData(); }
         } catch (err) { balance = 1500; stars = 0; inventory = []; stats = { opened: 0, crafts: 0, capsulesBought: 0 }; questsData = { date: '', list: [] }; marketListings = []; saveAllData(); }
+        
+        // --- АВТОМАТИЧЕСКИЙ ФИКС БАГА С #NaN И ВОЗВРАТ СРЕДСТВ ---
+        if (typeof stats.capsulesBought !== 'number' || isNaN(stats.capsulesBought)) stats.capsulesBought = 0;
+        
+        let badItemsCount = 0;
+        let newInv = [];
+        for(let i=0; i<inventory.length; i++) {
+            let item = inventory[i];
+            if (item.type === 'capsule' || item.type === 'sticker' || isNaN(item.capsuleNum)) {
+                badItemsCount++;
+            } else {
+                newInv.push(item);
+            }
+        }
+        
+        let newMarket = [];
+        for(let i=0; i<marketListings.length; i++) {
+            let item = marketListings[i];
+            if (item.type === 'capsule' || item.type === 'sticker' || isNaN(item.capsuleNum)) {
+                badItemsCount++;
+                tg.openTelegramLink(`https://t.me/StockOGCasesBot?start=mcancel_${item.invId}`); 
+            } else {
+                newMarket.push(item);
+            }
+        }
+
+        newInv.forEach(item => {
+            if(item.appliedSticker && item.appliedSticker.includes('NaN')) {
+                delete item.appliedSticker; 
+            }
+        });
+        
+        stats.capsulesBought = 0; // Сбрасываем глобальный счетчик, чтобы начать заново 50/50
+
+        if (badItemsCount > 0) {
+            inventory = newInv;
+            marketListings = newMarket;
+            let refund = badItemsCount * 1000000;
+            balance += refund;
+            saveAllData();
+            alert(`🛠 Обнаружены багованные капсулы. Они были удалены, а вам возвращено ${refund.toLocaleString('ru-RU')} ₽!`);
+        } else if (isNaN(stats.capsulesBought)) {
+            saveAllData();
+        }
+        // ---------------------------------------------------------
         
         updateProfileUI(); checkQuests();
 
@@ -842,7 +887,8 @@
     function renderCases() {
         const grid = document.getElementById('casesGrid'); grid.innerHTML = '';
         
-        let capLeft = 50 - (stats.capsulesBought || 0);
+        if (typeof stats.capsulesBought !== 'number' || isNaN(stats.capsulesBought)) stats.capsulesBought = 0;
+        let capLeft = 50 - stats.capsulesBought;
         let capObj = allItems['capsule_souvenir'];
         let capBtn = capLeft > 0 ? `<button class="btn btn-warning" style="margin-top:10px; padding:8px; font-size:12px;" onclick="buyCapsule(event)">Купить (Осталось: ${capLeft}/50)</button>` : `<button class="btn btn-outline" style="margin-top:10px; padding:8px; font-size:12px;" disabled>Распродано</button>`;
         grid.innerHTML += `<div class="case-card" style="border-color:#eb4b4b; box-shadow:0 0 15px rgba(235,75,75,0.1);"><div class="case-card-img"><img src="${capObj.image}"></div><div class="case-card-title">${capObj.name}</div><div class="case-card-price">${capObj.price.toLocaleString('ru-RU')} ₽</div>${capBtn}</div>`;
@@ -857,11 +903,13 @@
 
     function buyCapsule(e) {
         e.stopPropagation();
+        if (typeof stats.capsulesBought !== 'number' || isNaN(stats.capsulesBought)) stats.capsulesBought = 0;
         if (stats.capsulesBought >= 50) return;
         let capObj = allItems['capsule_souvenir'];
         if (balance < capObj.price) { alert('Недостаточно средств!'); return; }
         if (confirm(`Купить ${capObj.name} за ${capObj.price.toLocaleString('ru-RU')} ₽? Капсула будет добавлена в инвентарь.`)) {
-            balance -= capObj.price; stats.capsulesBought++;
+            balance -= capObj.price; 
+            stats.capsulesBought++;
             inventory.push({ ...capObj, invId: String(Date.now() + Math.random()), capsuleNum: stats.capsulesBought });
             updateBalanceUI(); renderCases(); tg.showAlert(`Вы успешно приобрели ${capObj.name} #${stats.capsulesBought}! Загляните в инвентарь.`);
         }
