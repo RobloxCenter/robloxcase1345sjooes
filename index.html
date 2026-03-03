@@ -403,6 +403,8 @@
     let tg = window.Telegram.WebApp;
     tg.expand();
 
+    const SEC_SALT = "St0ck0G_2026_X"; // СЕКРЕТНЫЙ КЛЮЧ ОТ ДЮПОВ
+
     const db = {
         save: function(key, val) { 
             try {
@@ -693,12 +695,12 @@
             } else { balance = 1500; saveAllData(); }
         } catch (err) { balance = 1500; stars = 0; inventory = []; stats = { opened: 0, crafts: 0, capsulesBought: 0 }; questsData = { date: '', list: [] }; marketListings = []; saveAllData(); }
         
-        // --- ЗАЩИТА СЧЕТЧИКА ОТ NaN ---
+        
         if (typeof stats.capsulesBought !== 'number' || isNaN(stats.capsulesBought)) stats.capsulesBought = 0;
         
         updateProfileUI(); checkQuests();
 
-        // ЛОГИКА ОСМОТРА МАРКЕТА
+        
         const urlParams = new URLSearchParams(window.location.search);
         let inspectPayload = urlParams.get('inspect');
         if (inspectPayload) {
@@ -747,43 +749,57 @@
             }
         } catch(e) {}
 
-        let topupAmount = urlParams.get('topup_amount'); let topupId = urlParams.get('topup_id');
-        if (topupAmount && topupId) {
-            let pStr = await db.load('processed_topups'); let processedTopups = pStr ? JSON.parse(pStr) : [];
-            if (!processedTopups.includes(topupId)) {
-                let finalAdd = parseInt(topupAmount);
-                if(topupId.startsWith('msold_')) { tg.showAlert(`🎉 Деньги за проданный лот (${finalAdd.toLocaleString('ru-RU')} ₽) зачислены на баланс!`); }
-                else {
-                    if (hasAgent('agent_vatar') || hasAgent('agent_zixxto')) { let bonus = Math.floor(finalAdd * 0.03); finalAdd += bonus; tg.showAlert(`Бонус от Агента! Вам зачислено дополнительно +${bonus.toLocaleString('ru-RU')} ₽ (Итого: ${finalAdd.toLocaleString('ru-RU')} ₽)`); }
-                    else { tg.showAlert(`✅ Ваш баланс успешно пополнен на ${finalAdd.toLocaleString('ru-RU')} ₽!`); }
+        
+        let topupAmount = urlParams.get('topup_amount'); let topupId = urlParams.get('topup_id'); let hashCheck = urlParams.get('h');
+        if (topupAmount && topupId && hashCheck) {
+            let expectedHash = btoa(topupAmount + "_" + topupId + "_" + SEC_SALT);
+            if (expectedHash !== hashCheck) {
+                alert("❌ Ошибка безопасности: Неверная подпись ссылки!");
+            } else {
+                let pStr = await db.load('processed_topups'); let processedTopups = pStr ? JSON.parse(pStr) : [];
+                if (!processedTopups.includes(topupId)) {
+                    let finalAdd = parseInt(topupAmount);
+                    if(topupId.startsWith('msold_')) { tg.showAlert(`🎉 Деньги за проданный лот (${finalAdd.toLocaleString('ru-RU')} ₽) зачислены на баланс!`); }
+                    else {
+                        if (hasAgent('agent_vatar') || hasAgent('agent_zixxto')) { let bonus = Math.floor(finalAdd * 0.03); finalAdd += bonus; tg.showAlert(`Бонус от Агента! Вам зачислено дополнительно +${bonus.toLocaleString('ru-RU')} ₽ (Итого: ${finalAdd.toLocaleString('ru-RU')} ₽)`); }
+                        else { tg.showAlert(`✅ Ваш баланс успешно пополнен на ${finalAdd.toLocaleString('ru-RU')} ₽!`); }
+                    }
+                    balance += finalAdd; processedTopups.push(topupId); db.save('processed_topups', JSON.stringify(processedTopups)); saveAllData();
                 }
-                balance += finalAdd; processedTopups.push(topupId); db.save('processed_topups', JSON.stringify(processedTopups)); saveAllData();
             }
-            const url = new URL(window.location); url.searchParams.delete('topup_amount'); url.searchParams.delete('topup_id'); window.history.replaceState({}, document.title, url);
+            const url = new URL(window.location); url.searchParams.delete('topup_amount'); url.searchParams.delete('topup_id'); url.searchParams.delete('h'); window.history.replaceState({}, document.title, url);
         }
         
-        let ungiveAmount = urlParams.get('ungive_amount'); let ungiveId = urlParams.get('ungive_id');
-        if (ungiveAmount && ungiveId) {
-            let uStr = await db.load('processed_ungives'); let processedUngives = uStr ? JSON.parse(uStr) : [];
-            if (!processedUngives.includes(ungiveId)) {
-                let deduct = parseInt(ungiveAmount); balance -= deduct; if (balance < 0) balance = 0;
-                processedUngives.push(ungiveId); db.save('processed_ungives', JSON.stringify(processedUngives));
-                tg.showAlert(`⚠️ Внимание! Администратор списал с вашего баланса ${deduct.toLocaleString('ru-RU')} ₽.\nТекущий баланс: ${balance.toLocaleString('ru-RU')} ₽`); saveAllData();
+        let ungiveAmount = urlParams.get('ungive_amount'); let ungiveId = urlParams.get('ungive_id'); let hUngive = urlParams.get('h');
+        if (ungiveAmount && ungiveId && hUngive) {
+            if (btoa(ungiveAmount + "_" + ungiveId + "_" + SEC_SALT) !== hUngive) {
+                alert("❌ Ошибка безопасности!");
+            } else {
+                let uStr = await db.load('processed_ungives'); let processedUngives = uStr ? JSON.parse(uStr) : [];
+                if (!processedUngives.includes(ungiveId)) {
+                    let deduct = parseInt(ungiveAmount); balance -= deduct; if (balance < 0) balance = 0;
+                    processedUngives.push(ungiveId); db.save('processed_ungives', JSON.stringify(processedUngives));
+                    tg.showAlert(`⚠️ Внимание! С вашего баланса списано ${deduct.toLocaleString('ru-RU')} ₽.\nТекущий баланс: ${balance.toLocaleString('ru-RU')} ₽`); saveAllData();
+                }
             }
-            const url = new URL(window.location); url.searchParams.delete('ungive_amount'); url.searchParams.delete('ungive_id'); window.history.replaceState({}, document.title, url);
+            const url = new URL(window.location); url.searchParams.delete('ungive_amount'); url.searchParams.delete('ungive_id'); url.searchParams.delete('h'); window.history.replaceState({}, document.title, url);
+        }
+
+        let returnItemId = urlParams.get('return_item'); let returnToken = urlParams.get('t'); let hRet = urlParams.get('h');
+        if (returnItemId && returnToken && hRet) {
+            if (btoa(returnItemId + "_" + SEC_SALT) !== hRet) {
+                alert("❌ Ошибка безопасности!");
+            } else {
+                let pRetStr = await db.load('processed_returns'); let processedReturns = pRetStr ? JSON.parse(pRetStr) : [];
+                if (!processedReturns.includes(returnToken)) {
+                    let itemToReturn = allItems[returnItemId];
+                    if (itemToReturn) { inventory.push({ ...itemToReturn, invId: String(Date.now() + Math.random()), price: itemToReturn.price }); saveAllData(); processedReturns.push(returnToken); db.save('processed_returns', JSON.stringify(processedReturns)); tg.showAlert(`Предмет "${itemToReturn.name}" успешно возвращен в инвентарь!`); }
+                }
+            }
+            const url = new URL(window.location); url.searchParams.delete('return_item'); url.searchParams.delete('t'); url.searchParams.delete('h'); window.history.replaceState({}, document.title, url);
         }
 
         document.getElementById('tgUserName').innerText = userName; document.getElementById('userAvatar').innerText = initial; document.getElementById('refLink').innerText = `t.me/StockOGCasesBot?start=ref${tg.initDataUnsafe?.user?.id || '123'}`; updateAgentStatus();
-
-        let returnItemId = urlParams.get('return_item'); let returnToken = urlParams.get('t');
-        if (returnItemId && returnToken) {
-            let pRetStr = await db.load('processed_returns'); let processedReturns = pRetStr ? JSON.parse(pRetStr) : [];
-            if (!processedReturns.includes(returnToken)) {
-                let itemToReturn = allItems[returnItemId];
-                if (itemToReturn) { inventory.push({ ...itemToReturn, invId: String(Date.now() + Math.random()), price: itemToReturn.price }); saveAllData(); processedReturns.push(returnToken); db.save('processed_returns', JSON.stringify(processedReturns)); tg.showAlert(`Предмет "${itemToReturn.name}" успешно возвращен в инвентарь!`); }
-            }
-            const url = new URL(window.location); url.searchParams.delete('return_item'); url.searchParams.delete('t'); window.history.replaceState({}, document.title, url);
-        }
     };
 
     function startTopupProcess() { alert('Для пополнения баланса закройте это окно и нажмите кнопку "💰 Пополнить баланс" в меню бота!'); tg.close(); }
@@ -800,7 +816,11 @@
             }
             inventory.push(newItem); updateBalanceUI();
             alert("Предмет куплен! Выполняем перевод продавцу...");
-            tg.openTelegramLink(`https://t.me/StockOGCasesBot?start=mpaid_${inspectData.m_id}`); tg.close();
+            
+            
+            let payHash = btoa(inspectData.m_id + "_" + SEC_SALT);
+            tg.openTelegramLink(`https://t.me/StockOGCasesBot?start=mpaid_${inspectData.m_id}_${payHash}`); 
+            tg.close();
         }
     }
 
@@ -1040,13 +1060,17 @@
     }
 
     function confirmApplySticker(targetInvId) {
-        let stickerIdx = inventory.findIndex(i => String(i.invId) === String(currentStickerInvId)); let targetIdx = inventory.findIndex(i => String(i.invId) === String(targetInvId));
-        if(stickerIdx === -1 || targetIdx === -1) return;
+        // ЗАЩИТА: Проверка наличия обоих предметов в инвентаре
+        let stickerIdx = inventory.findIndex(i => String(i.invId) === String(currentStickerInvId)); 
+        let targetIdx = inventory.findIndex(i => String(i.invId) === String(targetInvId));
+        if(stickerIdx === -1 || targetIdx === -1) { alert("Ошибка: Один из предметов не найден в инвентаре!"); return; }
+
         let sticker = inventory[stickerIdx]; let target = inventory[targetIdx];
         let isCrit = false;
         if(sticker.buffDbl && sticker.buffDbl > 0 && (Math.random() * 100) <= sticker.buffDbl) { target.price = target.price * 2; isCrit = true; }
         target.price = Math.floor(target.price * sticker.buffVal); target.appliedSticker = sticker.id;
         if(sticker.buffUpg && sticker.buffUpg > 0) target.stickerUpgBuff = sticker.buffUpg;
+        
         inventory.splice(stickerIdx, 1); saveAllData(); renderInventory(); closeModal('applyStickerModal');
         if(isCrit) tg.showAlert(`🔥 КРИТИЧЕСКИЙ УСПЕХ!\nЦена вещи удвоена перед баффом!\nНовая цена: ${target.price.toLocaleString('ru-RU')} ₽`); else alert(`✅ Наклейка успешно применена!\nНовая цена вещи: ${target.price.toLocaleString('ru-RU')} ₽`);
     }
@@ -1107,8 +1131,16 @@
     }
     function toggleCraftItem(invId) { if (craftSelectedIds.includes(String(invId))) craftSelectedIds = craftSelectedIds.filter(id => id !== String(invId)); else if (craftSelectedIds.length < 3) craftSelectedIds.push(String(invId)); renderCraftInventory(); }
     function updateCraftSlots() { for(let i=0; i<3; i++) { const slot = document.getElementById(`slot-${i}`); if (craftSelectedIds[i]) { const item = inventory.find(x => String(x.invId) === String(craftSelectedIds[i])); slot.innerHTML = renderItemIcon(item); slot.classList.add('filled'); } else { slot.innerHTML = ''; slot.classList.remove('filled'); } } const btn = document.getElementById('btnCraft'); if (craftSelectedIds.length === 3) { btn.style.opacity = '1'; btn.style.cursor = 'pointer'; } else { btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed'; } }
+    
     function executeCraft() {
-        if (craftSelectedIds.length < 3 || isOpening) return; isOpening = true; isStandardCase = false; stats.crafts += 1; document.getElementById('statCrafts').innerText = stats.crafts; saveAllData();
+        if (craftSelectedIds.length < 3 || isOpening) return; 
+        
+        
+        for(let id of craftSelectedIds) {
+            if(!inventory.find(i => String(i.invId) === String(id))) { alert("Ошибка: Один из предметов исчез из инвентаря!"); resetCrafting(); return; }
+        }
+
+        isOpening = true; isStandardCase = false; stats.crafts += 1; document.getElementById('statCrafts').innerText = stats.crafts; saveAllData();
         inventory = inventory.filter(item => !craftSelectedIds.includes(String(item.invId))); saveAllData(); document.getElementById('page-games').classList.remove('active'); document.getElementById('page-roulette').classList.add('active'); document.getElementById('openingCaseName').innerText = "Контракт..."; document.getElementById('roulette').style.display = 'block';
         let possibleDrops = Object.values(allItems).filter(i => !i.isSecret && i.type === 'item');
         if (hasAgent('agent_vovan') || hasAgent('agent_perfecto')) { possibleDrops = possibleDrops.map(item => { let w = item.weight || 1; if ((item.price || 0) > 80000) w *= 3; return { ...item, weight: w }; }); }
@@ -1122,8 +1154,15 @@
     function openUpgTargetModal() { const grid = document.getElementById('upgTargetGrid'); grid.innerHTML = ''; const targetPool = Object.values(allItems).filter(d => d.type === 'item' && !d.isSecret && (d.price || 0) > 10000 && d.type !== 'agent'); targetPool.sort((a,b) => (a.price || 0) - (b.price || 0)).forEach(item => { let p = item.price || 0; grid.innerHTML += `<div class="inv-item" style="border-top: 3px solid ${item.color};" onclick="selectUpgTarget('${item.id}')"><div class="inv-item-img">${renderItemIcon(item)}</div><div class="inv-item-name">${item.name}</div><div class="inv-item-price">${p.toLocaleString('ru-RU')} ₽</div></div>`; }); openModal('upgTargetModal'); }
     function selectUpgTarget(id) { upgTargetItem = allItems[id]; closeModal('upgTargetModal'); updateUpgUI(); }
     function updateUpgUI() { const mySlot = document.getElementById('upg-my-slot'); if (upgMyItem) { mySlot.innerHTML = renderItemIcon(upgMyItem); mySlot.classList.add('filled'); } else { mySlot.innerHTML = '<span style="font-size:12px; color:#8b8b99;">Ваш<br>предмет</span>'; mySlot.classList.remove('filled'); } const targetSlot = document.getElementById('upg-target-slot'); if (upgTargetItem) { targetSlot.innerHTML = renderItemIcon(upgTargetItem); targetSlot.classList.add('filled'); } else { targetSlot.innerHTML = '<span style="font-size:12px; color:#8b8b99;">Желаемый<br>предмет</span>'; targetSlot.classList.remove('filled'); } let chance = 0; if (upgMyItem && upgTargetItem) { let trgP = upgTargetItem.price || 1; let myP = upgMyItem.price || 0; let agentUpgBonus = 0; if (hasAgent('agent_vovan')) agentUpgBonus += 6; else if (hasAgent('agent_cheba') || hasAgent('agent_funky') || hasAgent('agent_pechen')) agentUpgBonus += 5; if(upgMyItem.stickerUpgBuff) agentUpgBonus += upgMyItem.stickerUpgBuff; chance = Math.min((myP / trgP) * 100 * 0.9 + agentUpgBonus, 95); } document.getElementById('upg-chance').innerText = `Шанс: ${chance.toFixed(1)}%`; const btn = document.getElementById('btnUpgrade'); if (upgMyItem && upgTargetItem) { btn.style.opacity = '1'; btn.style.cursor = 'pointer'; } else { btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed'; } }
+    
     function executeUpgrade() {
-        if (!upgMyItem || !upgTargetItem || isOpening) return; isOpening = true; isStandardCase = false; let trgP = upgTargetItem.price || 1; let myP = upgMyItem.price || 0; let agentUpgBonus = 0; if (hasAgent('agent_vovan')) agentUpgBonus += 6; else if (hasAgent('agent_cheba') || hasAgent('agent_funky') || hasAgent('agent_pechen')) agentUpgBonus += 5; if(upgMyItem.stickerUpgBuff) agentUpgBonus += upgMyItem.stickerUpgBuff; let chance = Math.min((myP / trgP) * 100 * 0.9 + agentUpgBonus, 95); let roll = Math.random() * 100; let isWin = roll <= chance; inventory = inventory.filter(i => String(i.invId) !== String(upgMyItem.invId)); saveAllData(); document.getElementById('page-games').classList.remove('active'); document.getElementById('page-roulette').classList.add('active'); document.getElementById('openingCaseName').innerText = "Апгрейд..."; document.getElementById('roulette').style.display = 'block'; const r = document.getElementById('rouletteItems'); r.innerHTML = ''; for (let i = 0; i < 70; i++) { let item = (Math.random() < 0.5) ? upgTargetItem : { icon: '❌', color: '#8b8b99' }; const div = document.createElement('div'); div.className = 'item'; div.style.borderBottom = `4px solid ${item.color}`; div.innerHTML = renderItemIcon(item, true); r.appendChild(div); } if (isWin) { lastWonItem = JSON.parse(JSON.stringify(upgTargetItem)); } else { lastWonItem = { id: 'fail', icon: '❌', name: 'ПРОВАЛ', color: '#8b8b99', price: 0, type: 'fail' }; } if (!lastWonItem.price) lastWonItem.price = 0; db.save('pending_claim', JSON.stringify(lastWonItem)); 
+        if (!upgMyItem || !upgTargetItem || isOpening) return; 
+        
+        
+        let existsMy = inventory.find(i => String(i.invId) === String(upgMyItem.invId));
+        if (!existsMy) { alert("Ошибка: Ваш предмет пропал из инвентаря!"); upgMyItem = null; updateUpgUI(); return; }
+
+        isOpening = true; isStandardCase = false; let trgP = upgTargetItem.price || 1; let myP = upgMyItem.price || 0; let agentUpgBonus = 0; if (hasAgent('agent_vovan')) agentUpgBonus += 6; else if (hasAgent('agent_cheba') || hasAgent('agent_funky') || hasAgent('agent_pechen')) agentUpgBonus += 5; if(upgMyItem.stickerUpgBuff) agentUpgBonus += upgMyItem.stickerUpgBuff; let chance = Math.min((myP / trgP) * 100 * 0.9 + agentUpgBonus, 95); let roll = Math.random() * 100; let isWin = roll <= chance; inventory = inventory.filter(i => String(i.invId) !== String(upgMyItem.invId)); saveAllData(); document.getElementById('page-games').classList.remove('active'); document.getElementById('page-roulette').classList.add('active'); document.getElementById('openingCaseName').innerText = "Апгрейд..."; document.getElementById('roulette').style.display = 'block'; const r = document.getElementById('rouletteItems'); r.innerHTML = ''; for (let i = 0; i < 70; i++) { let item = (Math.random() < 0.5) ? upgTargetItem : { icon: '❌', color: '#8b8b99' }; const div = document.createElement('div'); div.className = 'item'; div.style.borderBottom = `4px solid ${item.color}`; div.innerHTML = renderItemIcon(item, true); r.appendChild(div); } if (isWin) { lastWonItem = JSON.parse(JSON.stringify(upgTargetItem)); } else { lastWonItem = { id: 'fail', icon: '❌', name: 'ПРОВАЛ', color: '#8b8b99', price: 0, type: 'fail' }; } if (!lastWonItem.price) lastWonItem.price = 0; db.save('pending_claim', JSON.stringify(lastWonItem)); 
         runRouletteAnimation(lastWonItem, () => { if (isWin) { addQuestProgress('upgrades', 1); showResultModal('Апгрейд успешен!'); } else { showResultModal('Провал...'); } upgMyItem = null; upgTargetItem = null; }); 
     }
 
