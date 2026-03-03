@@ -693,50 +693,8 @@
             } else { balance = 1500; saveAllData(); }
         } catch (err) { balance = 1500; stars = 0; inventory = []; stats = { opened: 0, crafts: 0, capsulesBought: 0 }; questsData = { date: '', list: [] }; marketListings = []; saveAllData(); }
         
-        // --- АВТОМАТИЧЕСКИЙ ФИКС БАГА С #NaN И ВОЗВРАТ СРЕДСТВ ---
+        // --- ЗАЩИТА СЧЕТЧИКА ОТ NaN ---
         if (typeof stats.capsulesBought !== 'number' || isNaN(stats.capsulesBought)) stats.capsulesBought = 0;
-        
-        let badItemsCount = 0;
-        let newInv = [];
-        for(let i=0; i<inventory.length; i++) {
-            let item = inventory[i];
-            if (item.type === 'capsule' || item.type === 'sticker' || isNaN(item.capsuleNum)) {
-                badItemsCount++;
-            } else {
-                newInv.push(item);
-            }
-        }
-        
-        let newMarket = [];
-        for(let i=0; i<marketListings.length; i++) {
-            let item = marketListings[i];
-            if (item.type === 'capsule' || item.type === 'sticker' || isNaN(item.capsuleNum)) {
-                badItemsCount++;
-                tg.openTelegramLink(`https://t.me/StockOGCasesBot?start=mcancel_${item.invId}`); 
-            } else {
-                newMarket.push(item);
-            }
-        }
-
-        newInv.forEach(item => {
-            if(item.appliedSticker && item.appliedSticker.includes('NaN')) {
-                delete item.appliedSticker; 
-            }
-        });
-        
-        stats.capsulesBought = 0; // Сбрасываем глобальный счетчик, чтобы начать заново 50/50
-
-        if (badItemsCount > 0) {
-            inventory = newInv;
-            marketListings = newMarket;
-            let refund = badItemsCount * 1000000;
-            balance += refund;
-            saveAllData();
-            alert(`🛠 Обнаружены багованные капсулы. Они были удалены, а вам возвращено ${refund.toLocaleString('ru-RU')} ₽!`);
-        } else if (isNaN(stats.capsulesBought)) {
-            saveAllData();
-        }
-        // ---------------------------------------------------------
         
         updateProfileUI(); checkQuests();
 
