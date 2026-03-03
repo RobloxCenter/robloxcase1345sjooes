@@ -35,10 +35,14 @@
         .inventory-grid {display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
         .inv-item {background:#1f1f25;border-radius:16px;padding:15px 10px;text-align:center;border:1px solid #2a2a35;position:relative;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:space-between;}
         .inv-item.selected {border-color:#6c5ce7;background:rgba(108,92,231,0.1);transform:translateY(-3px);box-shadow:0 8px 20px rgba(108,92,231,0.2);}
-        .inv-item-img {height:50px;margin-bottom:10px;display:flex;align-items:center;justify-content:center;font-size:40px;}
+        .inv-item-img {height:50px;margin-bottom:10px;display:flex;align-items:center;justify-content:center;font-size:40px;position:relative;}
         .inv-item-img img {max-width:100%;max-height:100%;}
-        .inv-item-name {font-size:12px;font-weight:700;width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:8px;}
+        .inv-item-name {font-size:12px;font-weight:700;width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;}
+        .inv-item-desc {font-size:9px;color:#a29bfe;margin-bottom:6px;min-height:11px;}
         .inv-item-price {font-size:11px;color:#8b8b99;background:rgba(255,255,255,0.05);padding:4px 8px;border-radius:6px;}
+        
+        .sticker-badge {position:absolute; bottom:-5px; right:-5px; width:20px; height:20px; background:#16161a; border-radius:50%; border:1px solid #fdcb6e; display:flex; justify-content:center; align-items:center; font-size:10px; z-index:5;}
+        
         .craft-slots {display:flex;justify-content:center;gap:15px;margin:20px 0 25px 0;}
         .craft-slot {width:80px;height:80px;background:#1f1f25;border:2px dashed rgba(255,255,255,0.2);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:40px;}
         .craft-slot img {max-width: 80%; max-height: 80%; border:none;}
@@ -65,7 +69,6 @@
         .modal-content {background:#16161a;padding:30px 25px;border-radius:28px;text-align:center;border:1px solid rgba(255,255,255,0.1);width:90%;max-width:360px;box-shadow:0 25px 50px rgba(0,0,0,0.5);max-height:85vh;overflow-y:auto; transform: scale(0.95); opacity: 0;}
         
         #resultItemIcon img { max-height: 160px; max-width: 100%; object-fit: contain; }
-        
         .modal-overlay.show .modal-content { animation: scaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         .modal-overlay.show {display:flex;animation:fadeIn 0.2s ease;}
         
@@ -77,6 +80,11 @@
         
         .multi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-height: 40vh; overflow-y: auto; margin-bottom: 20px; padding-right: 5px; }
         .multi-grid img { max-height: 40px; max-width: 100%; object-fit: contain; }
+
+        .market-listing {background:#1f1f25;border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:12px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+        .market-listing-info {display:flex;align-items:center;gap:10px;}
+        .market-listing-img {width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(0,0,0,0.2); position:relative;}
+        .market-listing-img img {max-width:100%;max-height:100%;}
 
         @keyframes fadeIn {from{opacity:0;} to{opacity:1;}}
     </style>
@@ -108,9 +116,40 @@
         <div style="display: flex; gap: 10px; margin-bottom: 20px;">
             <button class="btn" id="btnTabCases" onclick="switchShopTab('cases')">Кейсы</button>
             <button class="btn btn-outline" id="btnTabKeys" onclick="switchShopTab('keys')">Ключи</button>
+            <button class="btn btn-outline" id="btnTabMarket" onclick="switchShopTab('market')">Мой Маркет</button>
         </div>
+        
         <div class="cases-grid" id="casesGrid"></div>
         <div class="cases-grid" id="keysGrid" style="display: none;"></div>
+        
+        <div id="marketContainer" style="display: none;">
+            <div class="panel" style="padding: 15px; margin-bottom: 15px;">
+                <h3 style="margin: 0 0 10px 0; color: #00b894;">Мои лоты на продаже</h3>
+                <p style="font-size:12px; color:#8b8b99; margin-bottom:15px;">Чтобы посмотреть чужие лоты, нажми "🛒 Маркет игроков" в меню Telegram бота.</p>
+                <div id="myMarketListings"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-inspect" class="page" style="margin: -20px; padding-bottom: 40px;">
+        <div style="padding: 20px; cursor: pointer; color: #8b8b99; font-weight: bold; display: flex; align-items: center; gap: 5px; background: rgba(22,22,28,0.8); border-bottom: 1px solid rgba(255,255,255,0.05);" onclick="tg.close()">
+            <span style="font-size: 18px;">✕</span> Закрыть
+        </div>
+        
+        <div style="width: 100%; padding: 40px 20px; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(108,92,231,0.15) 0%, transparent 70%); position: relative;" id="inspectImgContainer">
+        </div>
+        
+        <div style="padding: 0 20px; text-align: center;">
+            <h2 id="inspectName" style="margin:0 0 5px 0; font-size:24px;">Предмет</h2>
+            <div id="inspectExtra" style="color: #a29bfe; font-size: 13px; margin-bottom: 20px; font-weight:bold;"></div>
+            
+            <div style="background:#1f1f25; border-radius:16px; padding:15px; margin-bottom:20px; border:1px solid rgba(255,255,255,0.05);">
+                <div style="font-size:12px; color:#8b8b99;">Цена на бирже:</div>
+                <div id="inspectPrice" style="font-size:26px; font-weight:800; color:#fdcb6e;">0 ₽</div>
+            </div>
+
+            <button class="btn btn-success" id="inspectBuyBtn" style="padding: 16px; font-size: 16px; width:100%;" onclick="buyMarketItem()">Купить предмет</button>
+        </div>
     </div>
 
     <div id="page-case-view" class="page" style="margin: -20px; padding-bottom: 40px;">
@@ -293,7 +332,7 @@
 <div class="modal-overlay" id="resultModal">
     <div class="modal-content">
         <h2 style="margin-top: 0; color: #fff; font-size: 26px;" id="resultTitle">Отличный дроп!</h2>
-        <div id="resultItemIcon" style="font-size: 90px; margin: 25px 0; display:flex; justify-content:center; align-items:center;">🗡️</div>
+        <div id="resultItemIcon" style="font-size: 90px; margin: 25px 0; display:flex; justify-content:center; align-items:center; position:relative;">🗡️</div>
         <div id="resultItemName" style="font-weight: 800; font-size: 22px; margin-bottom: 8px; line-height: 1.2;">Меч</div>
         <div id="resultItemInfoBlock" style="color: #8b8b99; font-size: 15px; margin-bottom: 30px;"></div>
         <div style="display: flex; flex-direction: column; gap: 12px;" id="resultActionsContainer"></div>
@@ -337,6 +376,25 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="applyStickerModal">
+    <div class="modal-content">
+        <h2 style="margin-top: 0; color: #fff;">Куда наклеить?</h2>
+        <p style="color: #8b8b99; font-size: 13px; margin-bottom: 15px;">Выберите предмет одежды. Наклейка сгорит, а вещь станет дороже!</p>
+        <div class="inventory-grid" id="applyStickerGrid"></div>
+        <button class="btn btn-outline" style="margin-top:15px;" onclick="closeModal('applyStickerModal')">Отмена</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="marketSellModal">
+    <div class="modal-content">
+        <h2 style="margin-top: 0; color: #fff;">Продажа на Маркете</h2>
+        <p style="color: #8b8b99; font-size: 13px;" id="marketSellName">Предмет</p>
+        <input type="number" id="marketPriceInput" placeholder="Укажите вашу цену (₽)" style="width: 100%; padding: 14px; margin: 15px 0; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); background: #1f1f25; color: white; font-size: 16px; outline:none;">
+        <button class="btn btn-success" style="margin-bottom: 10px;" onclick="confirmMarketListing()">Выставить лот</button>
+        <button class="btn btn-outline" onclick="closeModal('marketSellModal')">Отмена</button>
+    </div>
+</div>
+
 <script>
     document.addEventListener('contextmenu', e => e.preventDefault());
     document.addEventListener('keydown', e => { if(e.key==='F12' || (e.ctrlKey && e.shiftKey && (e.key==='I' || e.key==='J' || e.key==='C')) || (e.ctrlKey && e.key==='U')) e.preventDefault() });
@@ -349,12 +407,8 @@
         save: function(key, val) { 
             try {
                 let p = JSON.parse(val);
-                if (p && typeof p === 'object' && !Array.isArray(p)) {
-                    p._ts = Date.now();
-                    val = JSON.stringify(p);
-                }
+                if (p && typeof p === 'object' && !Array.isArray(p)) { p._ts = Date.now(); val = JSON.stringify(p); }
             } catch(e) {}
-            
             try { localStorage.setItem(key, val); } catch(e) {}
             try { if(tg.CloudStorage) { tg.CloudStorage.setItem(key, val); } } catch(e) {}
         },
@@ -362,54 +416,35 @@
             return new Promise((resolve) => {
                 let localVal = null;
                 try { localVal = localStorage.getItem(key); } catch(e) {}
-                
                 if(tg.CloudStorage) {
                     let resolved = false;
-                    let fallback = setTimeout(() => {
-                        if(!resolved) { resolved = true; resolve(localVal); }
-                    }, 500);
-                    
+                    let fallback = setTimeout(() => { if(!resolved) { resolved = true; resolve(localVal); } }, 500);
                     try {
                         tg.CloudStorage.getItem(key, (err, cloudVal) => {
                             if(!resolved) {
-                                resolved = true;
-                                clearTimeout(fallback);
-                                if(err || !cloudVal || cloudVal === 'undefined') { 
-                                    resolve(localVal); 
-                                } else { 
+                                resolved = true; clearTimeout(fallback);
+                                if(err || !cloudVal || cloudVal === 'undefined') { resolve(localVal); } 
+                                else { 
                                     let lTs = 0, cTs = 0;
                                     try { if(localVal) { let p = JSON.parse(localVal); if(p && p._ts) lTs = p._ts; } } catch(x){}
                                     try { if(cloudVal) { let p = JSON.parse(cloudVal); if(p && p._ts) cTs = p._ts; } } catch(x){}
-                                    
-                                    if (lTs > cTs) {
-                                        try { tg.CloudStorage.setItem(key, localVal); } catch(e) {}
-                                        resolve(localVal);
-                                    } else {
-                                        try { localStorage.setItem(key, cloudVal); } catch(e) {}
-                                        resolve(cloudVal);
-                                    }
+                                    if (lTs > cTs) { try { tg.CloudStorage.setItem(key, localVal); } catch(e) {} resolve(localVal); } 
+                                    else { try { localStorage.setItem(key, cloudVal); } catch(e) {} resolve(cloudVal); }
                                 }
                             }
                         });
-                    } catch (e) {
-                        if(!resolved) { resolved = true; clearTimeout(fallback); resolve(localVal); }
-                    }
-                } else {
-                    resolve(localVal);
-                }
+                    } catch (e) { if(!resolved) { resolved = true; clearTimeout(fallback); resolve(localVal); } }
+                } else { resolve(localVal); }
             });
         }
     };
 
-    let balance = 0; 
-    let stars = 0;
-    let stats = { opened: 0, crafts: 0 }; 
-    let inventory = [];
-    let questsData = { date: '', list: [] };
-
+    let balance = 0; let stars = 0; let stats = { opened: 0, crafts: 0, capsulesBought: 0 }; let inventory = [];
+    let questsData = { date: '', list: [] }; let marketListings = [];
+    
     let isOpening = false; let currentPreviewCase = null; let lastWonItem = null; let multiWonItems = [];
     let openAmount = 1; let craftSelectedIds = []; let upgMyItem = null; let upgTargetItem = null;
-    let isBonusMode = false; let isStandardCase = false; let currentWithdrawItemId = null;
+    let currentWithdrawItemId = null; let currentStickerInvId = null; let currentMarketSellId = null; let inspectData = null;
     let userName = "Игрок"; let linkedRobloxAcc = null; let bindTargetUsername = "";
     let currentBindPhrase = ""; let bindTimerInt = null; let bindTimeLeft = 180;
     const bindWords = ['tree','auto','car','boom','cat','dog','sun','moon','star','fire','water','box','house','road','sky'];
@@ -498,18 +533,16 @@
         'md_i10': { id: 'md_i10', type: 'item', name: 'Синие джинсы Андер', color: '#b0c3d9', image: 'https://i.postimg.cc/YS7m55PQ/IMAGE-2026-03-01-17-05-26.jpg', price: 45000, weight: parseFloat(atob('NjA=')) },
         'md_i11': { id: 'md_i11', type: 'item', name: 'Белая Рубашка Андер', color: '#b0c3d9', image: 'https://i.postimg.cc/65jKJn1C/IMAGE-2026-03-01-17-13-30.jpg', price: 50000, weight: parseFloat(atob('NTU=')) },
 
-        'bape_sec': { id: 'bape_sec', type: 'item', name: 'Секретный Дроп Bape', color: '#ffea00', image: 'https://i.postimg.cc/mrnXBcgj/IMAGE-2026-02-27-17-34-31.jpg', price: 14000000, weight: parseFloat(atob('MA==')), isSecret: true },
-        'bape_red1': { id: 'bape_red1', type: 'item', name: 'Коричневый Рюкзак Бейп', color: '#eb4b4b', image: 'https://i.postimg.cc/HxCMwHZW/IMAGE-2026-02-27-17-37-34.jpg', price: 130000, weight: parseFloat(atob('MzA=')) },
-        'bape_blu1': { id: 'bape_blu1', type: 'item', name: 'Фиолетовая кофта Бейп', color: '#54a0ff', image: 'https://i.postimg.cc/gjtrTPDh/IMAGE-2026-02-27-17-39-01.jpg', price: 30000, weight: parseFloat(atob('NDA=')) },
-        'bape_blu2': { id: 'bape_blu2', type: 'item', name: 'Черная Футболка Бейп', color: '#54a0ff', image: 'https://i.postimg.cc/y6pdBsms/IMAGE-2026-02-27-17-39-53.jpg', price: 20000, weight: parseFloat(atob('NDU=')) },
-        'bape_blu3': { id: 'bape_blu3', type: 'item', name: 'Желтая футболка Бейп', color: '#54a0ff', image: 'https://i.postimg.cc/m2MtSKHm/IMAGE-2026-02-27-17-41-47.jpg', price: 25000, weight: parseFloat(atob('NDU=')) },
-        'bape_blu4': { id: 'bape_blu4', type: 'item', name: 'Песчаное Худи Бейп', color: '#54a0ff', image: 'https://i.postimg.cc/K8xvDjFr/IMAGE-2026-02-27-17-42-28.jpg', price: 45000, weight: parseFloat(atob('MzU=')) },
-        'bape_blu5': { id: 'bape_blu5', type: 'item', name: 'Серые штаны Бейп', color: '#54a0ff', image: 'https://i.postimg.cc/9FjWc0D6/IMAGE-2026-02-27-17-43-08.jpg', price: 35000, weight: parseFloat(atob('NDA=')) },
-        'bape_blu6': { id: 'bape_blu6', type: 'item', name: 'Джинсы Бейп', color: '#54a0ff', image: 'https://i.postimg.cc/vBVsswbb/IMAGE-2026-02-27-17-43-38.jpg', price: 35000, weight: parseFloat(atob('NDA=')) },
-        'bape_blu7': { id: 'bape_blu7', type: 'item', name: 'Синие джинсы Бейп', color: '#54a0ff', image: 'https://i.postimg.cc/dVVc0yJF/IMAGE-2026-02-27-17-44-24.jpg', price: 35000, weight: parseFloat(atob('NDA=')) },
-        'bape_blu8': { id: 'bape_blu8', type: 'item', name: 'Черные Джинсы Бейп', color: '#54a0ff', image: 'https://i.postimg.cc/3xRzhQZr/IMAGE-2026-02-27-17-45-07.jpg', price: 35000, weight: parseFloat(atob('NDA=')) },
-        'bape_gry1': { id: 'bape_gry1', type: 'item', name: 'Синее худи Бейп', color: '#b0c3d9', image: 'https://i.postimg.cc/J4tQ4rSQ/IMAGE-2026-02-27-17-47-00.jpg', price: 15000, weight: parseFloat(atob('NTU=')) },
-        'bape_gry2': { id: 'bape_gry2', type: 'item', name: 'Красная Футболка Бейп', color: '#b0c3d9', image: 'https://i.postimg.cc/VsZjTy5j/IMAGE-2026-02-27-17-47-38.jpg', price: 10000, weight: parseFloat(atob('NjA=')) }
+        'capsule_souvenir': { id: 'capsule_souvenir', type: 'capsule', name: 'Сувенирная Капсула Наклеек', color: '#eb4b4b', price: 1000000, image: 'https://i.postimg.cc/NFL1dVNJ/IMAGE-2026-03-02-19-09-53.jpg' },
+
+        'sticker_holo_eared': { id: 'sticker_holo_eared', type: 'sticker', name: 'Ушастый Холо', color: '#ffea00', image: 'https://i.postimg.cc/L80w8KPP/IMAGE-2026-03-02-19-32-17.jpg', price: 0, weight: parseFloat(atob('MC4wMDAx')), isSecret: true, buffVal: 1.45, buffUpg: 0, buffDbl: 0 },
+        'sticker_eared': { id: 'sticker_eared', type: 'sticker', name: 'Ушастый', color: '#ffea00', image: 'https://i.postimg.cc/L80w8KPP/IMAGE-2026-03-02-19-32-17.jpg', price: 0, weight: parseFloat(atob('MC4wMDE=')), isSecret: true, buffVal: 1.40, buffUpg: 0, buffDbl: 0 },
+        'sticker_stock_red': { id: 'sticker_stock_red', type: 'sticker', name: 'Футболка Сток ОГ', color: '#eb4b4b', image: 'https://i.postimg.cc/vHQqd9MG/IMAGE-2026-03-03-16-47-59.jpg', price: 0, weight: parseFloat(atob('MjU=')), buffVal: 1.25, buffUpg: 10, buffDbl: 0 },
+        'sticker_stock_gold': { id: 'sticker_stock_gold', type: 'sticker', name: 'Золотая Футболка Сток ОГ', color: '#eb4b4b', image: 'https://i.postimg.cc/bNDGrVzz/IMAGE-2026-03-03-16-51-00.jpg', price: 0, weight: parseFloat(atob('MjA=')), buffVal: 1.30, buffUpg: 0, buffDbl: 5 },
+        'sticker_stock_color': { id: 'sticker_stock_color', type: 'sticker', name: 'Разноцвет. Футболка Сток ОГ', color: '#eb4b4b', image: 'https://i.postimg.cc/DyxTV7V7/IMAGE-2026-03-03-16-54-15.jpg', price: 0, weight: parseFloat(atob('MTA=')), buffVal: 1.40, buffUpg: 5, buffDbl: 0 },
+        'sticker_palm_base': { id: 'sticker_palm_base', type: 'sticker', name: 'Базовая Наклейка Palm Angels', color: '#eb4b4b', image: 'https://i.postimg.cc/hjPSQsdG/IMAGE-2026-03-03-17-46-51.jpg', price: 0, weight: parseFloat(atob('NDU=')), buffVal: 1.20, buffUpg: 0, buffDbl: 0 },
+        'sticker_palm_gold': { id: 'sticker_palm_gold', type: 'sticker', name: 'Золотая Наклейка Palm Angels', color: '#eb4b4b', image: 'https://i.postimg.cc/sg4xBvNc/IMAGE-2026-03-03-17-48-32.jpg', price: 0, weight: parseFloat(atob('MzA=')), buffVal: 1.25, buffUpg: 0, buffDbl: 0 },
+        'sticker_palm_color': { id: 'sticker_palm_color', type: 'sticker', name: 'Разноцвет. Наклейка Palm Angels', color: '#eb4b4b', image: 'https://i.postimg.cc/pVKHV372/IMAGE-2026-03-03-17-51-18.jpg', price: 0, weight: parseFloat(atob('MjA=')), buffVal: 1.30, buffUpg: 0, buffDbl: 3 }
     };
 
     const casesData = [
@@ -544,61 +577,25 @@
         openModal('bindModal');
     }
 
-    function closeBindModal() {
-        clearInterval(bindTimerInt);
-        closeModal('bindModal');
-    }
+    function closeBindModal() { clearInterval(bindTimerInt); closeModal('bindModal'); }
 
     function goToBindStep2() {
         let nick = document.getElementById('bindUsernameInput').value.trim();
-        if (!/^[a-zA-Z0-9_]{3,20}$/.test(nick)) {
-            alert('Некорректный ник Roblox!'); return;
-        }
-        bindTargetUsername = nick;
-        currentBindPhrase = `${bindWords[Math.floor(Math.random()*bindWords.length)]}-${bindWords[Math.floor(Math.random()*bindWords.length)]}-${bindWords[Math.floor(Math.random()*bindWords.length)]}-${bindWords[Math.floor(Math.random()*bindWords.length)]}`;
-        document.getElementById('bindPhraseDisplay').innerText = currentBindPhrase;
-        document.getElementById('bindStep1').style.display = 'none';
-        document.getElementById('bindStep2').style.display = 'block';
-        bindTimeLeft = 180;
-        updateBindTimer();
-        clearInterval(bindTimerInt);
-        bindTimerInt = setInterval(() => {
-            bindTimeLeft--; updateBindTimer();
-            if (bindTimeLeft <= 0) { clearInterval(bindTimerInt); alert("Время вышло! Начните привязку заново."); closeBindModal(); }
-        }, 1000);
+        if (!/^[a-zA-Z0-9_]{3,20}$/.test(nick)) { alert('Некорректный ник Roblox!'); return; }
+        bindTargetUsername = nick; currentBindPhrase = `${bindWords[Math.floor(Math.random()*bindWords.length)]}-${bindWords[Math.floor(Math.random()*bindWords.length)]}-${bindWords[Math.floor(Math.random()*bindWords.length)]}-${bindWords[Math.floor(Math.random()*bindWords.length)]}`; document.getElementById('bindPhraseDisplay').innerText = currentBindPhrase; document.getElementById('bindStep1').style.display = 'none'; document.getElementById('bindStep2').style.display = 'block'; bindTimeLeft = 180; updateBindTimer(); clearInterval(bindTimerInt); bindTimerInt = setInterval(() => { bindTimeLeft--; updateBindTimer(); if (bindTimeLeft <= 0) { clearInterval(bindTimerInt); alert("Время вышло! Начните привязку заново."); closeBindModal(); } }, 1000);
     }
 
-    function updateBindTimer() {
-        let m = Math.floor(bindTimeLeft / 60); let s = bindTimeLeft % 60;
-        document.getElementById('bindTimerDisplay').innerText = `0${m}:${s < 10 ? '0'+s : s}`;
-    }
+    function updateBindTimer() { let m = Math.floor(bindTimeLeft / 60); let s = bindTimeLeft % 60; document.getElementById('bindTimerDisplay').innerText = `0${m}:${s < 10 ? '0'+s : s}`; }
 
     async function verifyRobloxAcc() {
-        const btn = document.getElementById('btnVerifyRoblox');
-        btn.disabled = true; btn.innerText = 'Проверка... (может занять 10-20 сек)';
+        const btn = document.getElementById('btnVerifyRoblox'); btn.disabled = true; btn.innerText = 'Проверка... (может занять 10-20 сек)';
         try {
-            const urls = ['https://users.roproxy.com/v1/usernames/users', 'https://corsproxy.io/?https://users.roblox.com/v1/usernames/users'];
-            let userId = null;
-            for (let url of urls) {
-                try {
-                    let r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ usernames: [bindTargetUsername], excludeBannedUsers: true }) });
-                    if (r.ok) { let d = await r.json(); if (d.data && d.data.length > 0) { userId = d.data[0].id; break; } }
-                } catch(e) {}
-            }
+            const urls = ['https://users.roproxy.com/v1/usernames/users', 'https://corsproxy.io/?https://users.roblox.com/v1/usernames/users']; let userId = null;
+            for (let url of urls) { try { let r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ usernames: [bindTargetUsername], excludeBannedUsers: true }) }); if (r.ok) { let d = await r.json(); if (d.data && d.data.length > 0) { userId = d.data[0].id; break; } } } catch(e) {} }
             if (!userId) { alert('Сбой соединения с серверами Roblox или ник не найден. Попробуйте снова!'); btn.disabled = false; btn.innerText = 'Я указал фразу'; return; }
-
-            const descUrls = [`https://users.roproxy.com/v1/users/${userId}`, `https://corsproxy.io/?https://users.roblox.com/v1/users/${userId}`];
-            let desc = null;
-            for (let url of descUrls) {
-                try { let r = await fetch(url); if (r.ok) { let d = await r.json(); desc = d.description || ""; break; } } catch(e) {}
-            }
-
-            if (desc !== null && desc.includes(currentBindPhrase)) {
-                linkedRobloxAcc = bindTargetUsername; saveAllData(); alert('✅ Аккаунт успешно привязан!'); closeBindModal(); updateProfileUI();
-            } else {
-                alert('❌ Фраза не найдена в описании профиля! Убедитесь, что вы сохранили описание в Roblox, подождите пару секунд и попробуйте нажать кнопку еще раз.');
-                btn.disabled = false; btn.innerText = 'Я указал фразу';
-            }
+            const descUrls = [`https://users.roproxy.com/v1/users/${userId}`, `https://corsproxy.io/?https://users.roblox.com/v1/users/${userId}`]; let desc = null;
+            for (let url of descUrls) { try { let r = await fetch(url); if (r.ok) { let d = await r.json(); desc = d.description || ""; break; } } catch(e) {} }
+            if (desc !== null && desc.includes(currentBindPhrase)) { linkedRobloxAcc = bindTargetUsername; saveAllData(); alert('✅ Аккаунт успешно привязан!'); closeBindModal(); updateProfileUI(); } else { alert('❌ Фраза не найдена в описании профиля! Убедитесь, что вы сохранили описание в Roblox, подождите пару секунд и попробуйте нажать кнопку еще раз.'); btn.disabled = false; btn.innerText = 'Я указал фразу'; }
         } catch (err) { alert('Критическая ошибка проверки. Попробуйте позже.'); btn.disabled = false; btn.innerText = 'Я указал фразу'; }
     }
 
@@ -613,85 +610,30 @@
     }
 
     function fireAgent(invId, name) {
-        if (confirm(`Вы уверены, что хотите уволить ${name}? Это действие нельзя отменить, и агент исчезнет навсегда.`)) {
-            inventory = inventory.filter(i => String(i.invId) !== String(invId));
-            saveAllData(); renderInventory(); updateAgentStatus(); alert(`${name} успешно уволен!`);
-        }
+        if (confirm(`Вы уверены, что хотите уволить ${name}? Это действие нельзя отменить, и агент исчезнет навсегда.`)) { inventory = inventory.filter(i => String(i.invId) !== String(invId)); saveAllData(); renderInventory(); updateAgentStatus(); alert(`${name} успешно уволен!`); }
     }
 
     function checkQuests() {
         let today = new Date().toLocaleDateString('ru-RU');
-        if (questsData.date !== today) {
-            let shuffled = questPool.sort(() => 0.5 - Math.random());
-            let selected = shuffled.slice(0, 3).map(q => ({ id: q.id, type: q.type, target: q.target, reward: q.reward, text: q.text, progress: 0, claimed: false }));
-            questsData = { date: today, list: selected };
-            saveAllData();
-        }
+        if (questsData.date !== today) { let shuffled = questPool.sort(() => 0.5 - Math.random()); let selected = shuffled.slice(0, 3).map(q => ({ id: q.id, type: q.type, target: q.target, reward: q.reward, text: q.text, progress: 0, claimed: false })); questsData = { date: today, list: selected }; saveAllData(); }
         renderQuests();
     }
 
     function renderQuests() {
-        const container = document.getElementById('questsContainer');
-        if (!container) return;
-        container.innerHTML = '';
-        
+        const container = document.getElementById('questsContainer'); if (!container) return; container.innerHTML = '';
         questsData.list.forEach((q, index) => {
-            let percent = Math.min((q.progress / q.target) * 100, 100);
-            let btnHTML = '';
-            
-            if (q.claimed) {
-                btnHTML = `<button class="btn btn-outline" style="width: auto; padding: 6px 12px; font-size: 12px; opacity: 0.5;" disabled>Выполнено</button>`;
-            } else if (q.progress >= q.target) {
-                btnHTML = `<button class="btn btn-success" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="claimQuest(${index})">Забрать ${q.reward} ⭐</button>`;
-            } else {
-                let displayProg = q.progress;
-                let displayTarg = q.target;
-                if(q.type === 'sells') {
-                    displayProg = (q.progress / 1000).toFixed(0) + 'к';
-                    displayTarg = (q.target / 1000).toFixed(0) + 'к';
-                }
-                btnHTML = `<div style="font-size: 12px; color: #8b8b99;">${displayProg} / ${displayTarg}</div>`;
-            }
-
-            container.innerHTML += `
-                <div style="background: #1f1f25; border-radius: 12px; padding: 12px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05); text-align: left;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <div style="font-size: 13px; font-weight: bold;">${q.text}</div>
-                        ${btnHTML}
-                    </div>
-                    <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
-                        <div style="height: 100%; width: ${percent}%; background: #fdcb6e; transition: width 0.3s ease;"></div>
-                    </div>
-                </div>
-            `;
+            let percent = Math.min((q.progress / q.target) * 100, 100); let btnHTML = '';
+            if (q.claimed) { btnHTML = `<button class="btn btn-outline" style="width: auto; padding: 6px 12px; font-size: 12px; opacity: 0.5;" disabled>Выполнено</button>`; } else if (q.progress >= q.target) { btnHTML = `<button class="btn btn-success" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="claimQuest(${index})">Забрать ${q.reward} ⭐</button>`; } else { let displayProg = q.progress; let displayTarg = q.target; if(q.type === 'sells') { displayProg = (q.progress / 1000).toFixed(0) + 'к'; displayTarg = (q.target / 1000).toFixed(0) + 'к'; } btnHTML = `<div style="font-size: 12px; color: #8b8b99;">${displayProg} / ${displayTarg}</div>`; }
+            container.innerHTML += `<div style="background: #1f1f25; border-radius: 12px; padding: 12px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05); text-align: left;"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;"><div style="font-size: 13px; font-weight: bold;">${q.text}</div>${btnHTML}</div><div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;"><div style="height: 100%; width: ${percent}%; background: #fdcb6e; transition: width 0.3s ease;"></div></div></div>`;
         });
     }
 
-    function claimQuest(index) {
-        if (questsData.list[index] && questsData.list[index].progress >= questsData.list[index].target && !questsData.list[index].claimed) {
-            questsData.list[index].claimed = true;
-            stars += questsData.list[index].reward;
-            updateBalanceUI();
-            renderQuests();
-            saveAllData();
-        }
-    }
-
-    function addQuestProgress(type, amount) {
-        let changed = false;
-        questsData.list.forEach(q => {
-            if (q.type === type && !q.claimed && q.progress < q.target) {
-                q.progress += amount;
-                if (q.progress > q.target) q.progress = q.target;
-                changed = true;
-            }
-        });
-        if (changed) { saveAllData(); renderQuests(); }
-    }
+    function claimQuest(index) { if (questsData.list[index] && questsData.list[index].progress >= questsData.list[index].target && !questsData.list[index].claimed) { questsData.list[index].claimed = true; stars += questsData.list[index].reward; updateBalanceUI(); renderQuests(); saveAllData(); } }
+    function addQuestProgress(type, amount) { let changed = false; questsData.list.forEach(q => { if (q.type === type && !q.claimed && q.progress < q.target) { q.progress += amount; if (q.progress > q.target) q.progress = q.target; changed = true; } }); if (changed) { saveAllData(); renderQuests(); } }
 
     function saveAllData() {
         try {
-            const data = { balance: balance, stars: stars, stats: stats, linkedAcc: linkedRobloxAcc, inventory: inventory.map(i => ({ id: i.id, invId: String(i.invId), price: i.price })), questsData: questsData };
+            const data = { balance: balance, stars: stars, stats: stats, linkedAcc: linkedRobloxAcc, inventory: inventory, questsData: questsData, marketListings: marketListings };
             db.save('roblox_save_v2', JSON.stringify(data));
         } catch(e) {}
     }
@@ -705,62 +647,93 @@
 
     function getWeightedRandomItem(dropList, isZixxtoActive = false) {
         let list = dropList;
-        if (isZixxtoActive && Math.random() < 0.2) { 
-            list = dropList.map(item => { let w = item.weight || 1; if (item.isSecret || item.color === '#eb4b4b') w *= 5; return { ...item, weight: w }; });
-        }
+        if (isZixxtoActive && Math.random() < 0.2) { list = dropList.map(item => { let w = item.weight || 1; if (item.isSecret || item.color === '#eb4b4b') w *= 5; return { ...item, weight: w }; }); }
         let totalWeight = list.reduce((sum, item) => sum + (item.weight || 1), 0);
         let random = Math.random() * totalWeight;
-        for (let i = 0; i < list.length; i++) {
-            if (random < (list[i].weight || 1)) return dropList[i];
-            random -= (list[i].weight || 1);
-        }
+        for (let i = 0; i < list.length; i++) { if (random < (list[i].weight || 1)) return dropList[i]; random -= (list[i].weight || 1); }
         return dropList[0];
     }
 
     function renderItemIcon(item, isTape = false) {
         if (!item) return '?';
+        let stickerHTML = '';
+        if (item.appliedSticker) {
+            let sBase = allItems[item.appliedSticker];
+            if(sBase && sBase.image) stickerHTML = `<div class="sticker-badge"><img src="${sBase.image}" style="width:14px; height:14px; border:none; border-radius:0;"></div>`;
+        }
+
         if (item.isSecret && item.image && item.id !== 'secret') {
             if (isTape) return `<div style="font-size:40px; color:${item.color || '#ffea00'}; filter: drop-shadow(0 0 10px ${item.color || '#ffea00'})">❓</div>`;
-            return `<img src="${item.image}" alt="Secret" style="border-radius:12px; border: 2px solid ${item.color || '#ffea00'}; box-shadow: 0 0 15px ${item.color || '#ffea00'};">`;
+            return `<div style="position:relative;"><img src="${item.image}" alt="Secret" style="border-radius:12px; border: 2px solid ${item.color || '#ffea00'}; box-shadow: 0 0 15px ${item.color || '#ffea00'};">${stickerHTML}</div>`;
         }
         if (isTape && item.isSecret) return `<div style="font-size:40px; color:${item.color || '#ffea00'}; filter: drop-shadow(0 0 10px ${item.color || '#ffea00'})">❓</div>`;
         if (item.type === 'money' && isTape) return `<div style="font-size: 16px; font-weight: 800; color:${item.color}">${(item.price || 0).toLocaleString('ru-RU')} ₽</div>`;
-        if (item.image && item.image !== '') return `<img src="${item.image}" alt="${item.name}">`;
-        if (item.icon) return `<div style="font-size:40px;">${item.icon}</div>`;
+        if (item.image && item.image !== '') return `<div style="position:relative;"><img src="${item.image}" alt="${item.name}" style="max-width:100%; max-height:100%; border-radius:12px;">${stickerHTML}</div>`;
+        if (item.icon) return `<div style="font-size:40px; position:relative;">${item.icon}${stickerHTML}</div>`;
         if (item.type === 'money') return `<div style="font-size:30px;">💵</div>`;
         return '❓';
     }
 
     window.onload = async () => {
         let initial = "И";
-        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-            let u = tg.initDataUnsafe.user; if (u.username) userName = "@" + u.username; else userName = u.first_name || u.id.toString(); initial = userName.replace('@', '').charAt(0).toUpperCase();
-        }
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) { let u = tg.initDataUnsafe.user; if (u.username) userName = "@" + u.username; else userName = u.first_name || u.id.toString(); initial = userName.replace('@', '').charAt(0).toUpperCase(); }
         
         try {
             let v2Save = await db.load('roblox_save_v2');
             if (v2Save && v2Save !== 'null') {
                 let parsed = JSON.parse(v2Save);
-                balance = parsed.balance || 0; 
-                stars = parsed.stars || 0;
-                stats = parsed.stats || { opened: 0, crafts: 0 }; 
-                linkedRobloxAcc = parsed.linkedAcc || null;
-                questsData = parsed.questsData || { date: '', list: [] };
-                inventory = (parsed.inventory || []).map(m => { let baseItem = allItems[m.id]; if (baseItem) return { ...baseItem, invId: String(m.invId), price: m.price || baseItem.price || 0 }; return null; }).filter(i => i !== null);
-            } else {
-                let oldLinked = await db.load('roblox_linked_acc'); if (oldLinked && oldLinked !== 'null') linkedRobloxAcc = oldLinked;
-                let oldBal = await db.load('roblox_balance'); balance = oldBal !== null ? parseInt(oldBal) : 1500;
-                let oldInv = await db.load('roblox_inv');
-                if (oldInv && oldInv !== 'null') { inventory = JSON.parse(oldInv).map(m => { let baseItem = allItems[m.id]; if (baseItem) return { ...baseItem, invId: String(m.invId), price: m.price || baseItem.price || 0 }; return null; }).filter(i => i !== null); }
-                let oldStats = await db.load('roblox_stats'); if (oldStats && oldStats !== 'null') stats = JSON.parse(oldStats);
-                saveAllData(); 
-            }
-        } catch (err) {
-            balance = 1500; stars = 0; inventory = []; stats = { opened: 0, crafts: 0 }; questsData = { date: '', list: [] }; saveAllData();
-        }
+                balance = parsed.balance || 0; stars = parsed.stars || 0; stats = parsed.stats || { opened: 0, crafts: 0, capsulesBought: 0 }; 
+                linkedRobloxAcc = parsed.linkedAcc || null; questsData = parsed.questsData || { date: '', list: [] };
+                marketListings = parsed.marketListings || [];
+                inventory = (parsed.inventory || []).map(m => { 
+                    let baseItem = allItems[m.id]; 
+                    if (baseItem) return { ...baseItem, invId: String(m.invId), price: m.price || baseItem.price || 0, capsuleNum: m.capsuleNum, appliedSticker: m.appliedSticker, stickerUpgBuff: m.stickerUpgBuff }; 
+                    return null; 
+                }).filter(i => i !== null);
+            } else { balance = 1500; saveAllData(); }
+        } catch (err) { balance = 1500; stars = 0; inventory = []; stats = { opened: 0, crafts: 0, capsulesBought: 0 }; questsData = { date: '', list: [] }; marketListings = []; saveAllData(); }
         
-        updateProfileUI();
-        checkQuests();
+        updateProfileUI(); checkQuests();
+
+        // ЛОГИКА ОСМОТРА МАРКЕТА
+        const urlParams = new URLSearchParams(window.location.search);
+        let inspectPayload = urlParams.get('inspect');
+        if (inspectPayload) {
+            try {
+                let decoded = decodeURIComponent(escape(atob(inspectPayload)));
+                let parts = decoded.split("||");
+                let m_id = parts[0]; let item_id = parts[1]; let price = parseInt(parts[2]); let extra = parts[4];
+                
+                let baseItem = allItems[item_id];
+                if(baseItem) {
+                    inspectData = { m_id, price, baseItem, extra };
+                    
+                    document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.querySelectorAll('.nav').forEach(n => n.style.display = 'none');
+                    document.getElementById('page-inspect').classList.add('active');
+                    
+                    let dummyItem = { ...baseItem };
+                    if(extra && extra !== "none") {
+                        if(extra.startsWith('capsule_num:')) dummyItem.capsuleNum = extra.split(':')[1];
+                        else dummyItem.appliedSticker = extra;
+                    }
+                    
+                    document.getElementById('inspectImgContainer').innerHTML = renderItemIcon(dummyItem);
+                    document.getElementById('inspectImgContainer').querySelector('img').style.width = '200px';
+                    document.getElementById('inspectImgContainer').querySelector('img').style.height = '200px';
+                    if(dummyItem.appliedSticker) {
+                        let badge = document.getElementById('inspectImgContainer').querySelector('.sticker-badge');
+                        if(badge) { badge.style.width = '40px'; badge.style.height = '40px'; badge.style.bottom = '10px'; badge.style.right = '20px'; badge.querySelector('img').style.width = '30px'; badge.querySelector('img').style.height = '30px'; }
+                    }
+                    
+                    document.getElementById('inspectName').innerText = parts[3];
+                    if(extra && extra !== "none" && !extra.startsWith('capsule_num:')) document.getElementById('inspectExtra').innerText = `Наклеено: ${allItems[extra].name}`;
+                    document.getElementById('inspectPrice').innerText = `${price.toLocaleString('ru-RU')} ₽`;
+                }
+            } catch(e) { alert("Ошибка загрузки лота."); tg.close(); }
+            const url = new URL(window.location); url.searchParams.delete('inspect'); window.history.replaceState({}, document.title, url);
+        } else {
+            renderCases(); renderKeys(); renderMarket(); updateBalanceUI(); updateBonusButton();
+        }
 
         try {
             let pendingStr = await db.load('pending_claim');
@@ -768,33 +741,22 @@
                 try {
                     let pendingItem = JSON.parse(pendingStr);
                     if (pendingItem.type === 'money') { balance += pendingItem.price || 0; tg.showAlert(`Вы покинули игру до завершения! Ваш выигрыш (${pendingItem.name}) был зачислен на баланс.`); }
-                    else if (pendingItem.type === 'item' || pendingItem.type === 'agent') { inventory.push({ ...pendingItem, invId: String(Date.now() + Math.random()) }); tg.showAlert(`Вы покинули игру до завершения! Предмет "${pendingItem.name}" добавлен в инвентарь.`); }
-                    else if (pendingItem.type === 'fail') { tg.showAlert(`Вы покинули игру во время Апгрейда! К сожалению, шанс не сыграл и ваш предмет сгорел.`); }
+                    else if (pendingItem.type === 'item' || pendingItem.type === 'agent' || pendingItem.type === 'sticker') { inventory.push({ ...pendingItem, invId: String(Date.now() + Math.random()) }); tg.showAlert(`Вы покинули игру до завершения! Предмет "${pendingItem.name}" добавлен в инвентарь.`); }
                     db.save('pending_claim', 'null'); saveAllData();
                 } catch (e) { db.save('pending_claim', 'null'); }
             }
         } catch(e) {}
 
-        try {
-            let pendingMultiStr = await db.load('pending_claim_multi');
-            if (pendingMultiStr && pendingMultiStr !== 'null') {
-                try {
-                    let items = JSON.parse(pendingMultiStr); let moneyAdded = 0; let itemsAdded = 0;
-                    items.forEach(item => { if (item.type === 'money') moneyAdded += item.price; else if (item.type !== 'promo') { inventory.push({...item, invId: String(Date.now()+Math.random())}); itemsAdded++; } });
-                    balance += moneyAdded; tg.showAlert(`Вы покинули игру во время мульти-открытия! Восстановлено: ${itemsAdded} предметов и ${moneyAdded.toLocaleString('ru-RU')} ₽.`);
-                    db.save('pending_claim_multi', 'null'); saveAllData();
-                } catch(e) { db.save('pending_claim_multi', 'null'); }
-            }
-        } catch(e) {}
-
-        const urlParams = new URLSearchParams(window.location.search);
         let topupAmount = urlParams.get('topup_amount'); let topupId = urlParams.get('topup_id');
         if (topupAmount && topupId) {
             let pStr = await db.load('processed_topups'); let processedTopups = pStr ? JSON.parse(pStr) : [];
             if (!processedTopups.includes(topupId)) {
                 let finalAdd = parseInt(topupAmount);
-                if (hasAgent('agent_vatar') || hasAgent('agent_zixxto')) { let bonus = Math.floor(finalAdd * 0.03); finalAdd += bonus; tg.showAlert(`Бонус от Агента! Вам зачислено дополнительно +${bonus.toLocaleString('ru-RU')} ₽ (Итого: ${finalAdd.toLocaleString('ru-RU')} ₽)`); }
-                else { tg.showAlert(`✅ Ваш баланс успешно пополнен на ${finalAdd.toLocaleString('ru-RU')} ₽!`); }
+                if(topupId.startsWith('msold_')) { tg.showAlert(`🎉 Деньги за проданный лот (${finalAdd.toLocaleString('ru-RU')} ₽) зачислены на баланс!`); }
+                else {
+                    if (hasAgent('agent_vatar') || hasAgent('agent_zixxto')) { let bonus = Math.floor(finalAdd * 0.03); finalAdd += bonus; tg.showAlert(`Бонус от Агента! Вам зачислено дополнительно +${bonus.toLocaleString('ru-RU')} ₽ (Итого: ${finalAdd.toLocaleString('ru-RU')} ₽)`); }
+                    else { tg.showAlert(`✅ Ваш баланс успешно пополнен на ${finalAdd.toLocaleString('ru-RU')} ₽!`); }
+                }
                 balance += finalAdd; processedTopups.push(topupId); db.save('processed_topups', JSON.stringify(processedTopups)); saveAllData();
             }
             const url = new URL(window.location); url.searchParams.delete('topup_amount'); url.searchParams.delete('topup_id'); window.history.replaceState({}, document.title, url);
@@ -822,23 +784,40 @@
             }
             const url = new URL(window.location); url.searchParams.delete('return_item'); url.searchParams.delete('t'); window.history.replaceState({}, document.title, url);
         }
-
-        renderCases(); renderKeys(); updateBalanceUI(); updateBonusButton();
     };
 
     function startTopupProcess() { alert('Для пополнения баланса закройте это окно и нажмите кнопку "💰 Пополнить баланс" в меню бота!'); tg.close(); }
 
+    function buyMarketItem() {
+        if(!inspectData) return;
+        if(balance < inspectData.price) { alert("Недостаточно средств для покупки!"); return; }
+        if(confirm(`Списать ${inspectData.price.toLocaleString('ru-RU')} ₽ и забрать предмет?`)) {
+            balance -= inspectData.price;
+            let newItem = { ...inspectData.baseItem, invId: String(Date.now() + Math.random()) };
+            if(inspectData.extra && inspectData.extra !== "none") {
+                if(inspectData.extra.startsWith('capsule_num:')) newItem.capsuleNum = inspectData.extra.split(':')[1];
+                else newItem.appliedSticker = inspectData.extra;
+            }
+            inventory.push(newItem); updateBalanceUI();
+            alert("Предмет куплен! Выполняем перевод продавцу...");
+            tg.openTelegramLink(`https://t.me/StockOGCasesBot?start=mpaid_${inspectData.m_id}`); tg.close();
+        }
+    }
+
     function switchPage(pageId, btnElement) {
         if (isOpening) return; document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById('page-' + pageId).classList.add('active');
         if (btnElement) { document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); btnElement.classList.add('active'); }
-        if(pageId === 'inventory') renderInventory(); if(pageId === 'games') { renderCraftInventory(); updateUpgUI(); } if(pageId === 'bonus') { updateBonusButton(); checkQuests(); }
+        if(pageId === 'inventory') renderInventory(); if(pageId === 'games') { renderCraftInventory(); updateUpgUI(); } if(pageId === 'bonus') { updateBonusButton(); checkQuests(); } if(pageId === 'cases') renderMarket();
     }
 
     function switchShopTab(tabId) {
         document.getElementById('casesGrid').style.display = tabId === 'cases' ? 'grid' : 'none';
         document.getElementById('keysGrid').style.display = tabId === 'keys' ? 'grid' : 'none';
+        document.getElementById('marketContainer').style.display = tabId === 'market' ? 'block' : 'none';
         document.getElementById('btnTabCases').classList.replace(tabId === 'cases' ? 'btn-outline' : 'btn', tabId === 'cases' ? 'btn' : 'btn-outline');
         document.getElementById('btnTabKeys').classList.replace(tabId === 'keys' ? 'btn-outline' : 'btn', tabId === 'keys' ? 'btn' : 'btn-outline');
+        document.getElementById('btnTabMarket').classList.replace(tabId === 'market' ? 'btn-outline' : 'btn', tabId === 'market' ? 'btn' : 'btn-outline');
+        if(tabId === 'market') renderMarket();
     }
 
     function switchGameTab(tabId) {
@@ -855,10 +834,7 @@
 
     function spinBonusWheel() {
         if (isOpening) return; const btn = document.getElementById('btnBonusSpin'); if (btn.innerText === 'Доступно завтра') return;
-        isOpening = true; isBonusMode = true; isStandardCase = false;
-        
-        addQuestProgress('roulette', 1);
-
+        isOpening = true; isBonusMode = true; isStandardCase = false; addQuestProgress('roulette', 1);
         document.getElementById('page-bonus').classList.remove('active'); document.getElementById('page-roulette').classList.add('active'); document.getElementById('openingCaseName').innerText = "Колесо удачи..."; document.getElementById('roulette').style.display = 'block';
         const container = document.getElementById('rouletteItems'); container.innerHTML = ''; const roll = Math.random() * 100;
         if (roll <= 30) lastWonItem = { type: 'promo', icon: '🎟️', name: 'Промокод +5%', color: '#0984e3' }; else lastWonItem = { type: 'nothing', icon: '💨', name: 'Мимо', color: '#8b8b99' };
@@ -868,12 +844,30 @@
 
     function renderCases() {
         const grid = document.getElementById('casesGrid'); grid.innerHTML = '';
+        
+        let capLeft = 50 - (stats.capsulesBought || 0);
+        let capObj = allItems['capsule_souvenir'];
+        let capBtn = capLeft > 0 ? `<button class="btn btn-warning" style="margin-top:10px; padding:8px; font-size:12px;" onclick="buyCapsule(event)">Купить (Осталось: ${capLeft}/50)</button>` : `<button class="btn btn-outline" style="margin-top:10px; padding:8px; font-size:12px;" disabled>Распродано</button>`;
+        grid.innerHTML += `<div class="case-card" style="border-color:#eb4b4b; box-shadow:0 0 15px rgba(235,75,75,0.1);"><div class="case-card-img"><img src="${capObj.image}" style="width:100%; height:100%;"></div><div class="case-card-title">${capObj.name}</div><div class="case-card-price">${capObj.price.toLocaleString('ru-RU')} ₽</div>${capBtn}</div>`;
+
         casesData.forEach(c => {
             let finalPrice = getCasePrice(c); const displayImg = c.image ? `<img src="${c.image}" style="width:100%; height:100%;">` : `<div style="font-size:60px;">${c.icon}</div>`;
             let priceHTML = `<div class="case-card-price">${finalPrice.toLocaleString('ru-RU')} ₽</div>`;
             if (finalPrice < c.price) priceHTML = `<div class="case-card-price" style="background:rgba(0,184,148,0.15); color:#00b894;"><del style="color:#8b8b99; font-size:11px;">${c.price}</del> ${finalPrice.toLocaleString('ru-RU')} ₽</div>`;
             grid.innerHTML += `<div class="case-card" onclick="openCasePreview('${c.id}')"><div class="case-card-img">${displayImg}</div><div class="case-card-title">${c.name}</div>${priceHTML}</div>`;
         });
+    }
+
+    function buyCapsule(e) {
+        e.stopPropagation();
+        if (stats.capsulesBought >= 50) return;
+        let capObj = allItems['capsule_souvenir'];
+        if (balance < capObj.price) { alert('Недостаточно средств!'); return; }
+        if (confirm(`Купить ${capObj.name} за ${capObj.price.toLocaleString('ru-RU')} ₽? Капсула будет добавлена в инвентарь.`)) {
+            balance -= capObj.price; stats.capsulesBought++;
+            inventory.push({ ...capObj, invId: String(Date.now() + Math.random()), capsuleNum: stats.capsulesBought });
+            updateBalanceUI(); renderCases(); tg.showAlert(`Вы успешно приобрели ${capObj.name} #${stats.capsulesBought}! Загляните в инвентарь.`);
+        }
     }
 
     function renderKeys() {
@@ -891,9 +885,6 @@
             setTimeout(() => { btn.disabled = false; btn.innerText = oldText; }, 600);
         }
     }
-
-    function openModal(id) { const m = document.getElementById(id); m.style.display = 'flex'; setTimeout(() => m.classList.add('show'), 10); }
-    function closeModal(id) { const m = document.getElementById(id); m.classList.remove('show'); setTimeout(() => m.style.display = 'none', 300); }
 
     function changeCaseAmount(delta) {
         openAmount += delta; if(openAmount < 1) openAmount = 1; if(openAmount > 10) openAmount = 10; document.getElementById('caseAmount').innerText = openAmount;
@@ -934,9 +925,7 @@
         
         if (openAmount === 1) {
             document.getElementById('roulette').style.display = 'block'; document.getElementById('openingCaseName').innerText = `Открываем ${currentPreviewCase.name}...`; initRoulette(possibleDrops);
-            
             lastWonItem = JSON.parse(JSON.stringify(getWeightedRandomItem(possibleDrops, hasAgent('agent_zixxto'))));
-            
             if (!lastWonItem.price) lastWonItem.price = 0; db.save('pending_claim', JSON.stringify(lastWonItem)); runRouletteAnimation(lastWonItem, () => { if (lastWonItem.isSecret) showResultModal('ДЖЕКПОТ!'); else showResultModal('Ваш выигрыш!'); });
         } else {
             document.getElementById('roulette').style.display = 'none'; document.getElementById('openingCaseName').innerHTML = `Открываем ${openAmount}x ${currentPreviewCase.name}...<br><br><span style="font-size: 16px; color: #8b8b99;">Генерация предметов ⚙️</span>`; multiWonItems = [];
@@ -948,11 +937,34 @@
         }
     }
 
+    function openCapsuleFromInv(invId) {
+        if(isOpening) return;
+        let capIndex = inventory.findIndex(i => String(i.invId) === String(invId));
+        if (capIndex === -1) return;
+        let capItem = inventory[capIndex];
+        if(!confirm(`Открыть ${capItem.name} #${capItem.capsuleNum}?`)) return;
+        
+        inventory.splice(capIndex, 1); saveAllData(); renderInventory();
+        isOpening = true; isStandardCase = false; isBonusMode = false;
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById('page-roulette').classList.add('active'); 
+        document.getElementById('roulette').style.display = 'block'; document.getElementById('openingCaseName').innerText = `Открываем Капсулу #${capItem.capsuleNum}...`;
+        
+        let stickerDrops = ['sticker_holo_eared', 'sticker_eared', 'sticker_stock_red', 'sticker_stock_gold', 'sticker_stock_color', 'sticker_palm_base', 'sticker_palm_gold', 'sticker_palm_color'];
+        let possibleDrops = stickerDrops.map(id => allItems[id]).filter(item => item !== undefined);
+        initRoulette(possibleDrops);
+        
+        lastWonItem = JSON.parse(JSON.stringify(getWeightedRandomItem(possibleDrops)));
+        lastWonItem.capsuleNum = capItem.capsuleNum; 
+        
+        if (!lastWonItem.price) lastWonItem.price = 0; db.save('pending_claim', JSON.stringify(lastWonItem)); 
+        runRouletteAnimation(lastWonItem, () => { if (lastWonItem.isSecret) showResultModal('ДЖЕКПОТ!'); else showResultModal('Выпала наклейка!'); });
+    }
+
     function initRoulette(dropList) {
         const container = document.getElementById('rouletteItems'); container.innerHTML = '';
         for (let i = 0; i < 70; i++) {
             let randomItem = dropList[Math.floor(Math.random() * dropList.length)]; if (!randomItem) continue;
-            if (isStandardCase && Math.random() < 0.15 && currentPreviewCase.id !== 'agent_case') { let secItem = genericSecretItem; if (currentPreviewCase) { let caseSecrets = currentPreviewCase.drops.map(id => allItems[id]).filter(item => item && item.isSecret); if (caseSecrets.length > 0) secItem = caseSecrets[0]; } randomItem = secItem; }
+            if (isStandardCase && Math.random() < 0.15 && currentPreviewCase && currentPreviewCase.id !== 'agent_case') { let secItem = genericSecretItem; if (currentPreviewCase) { let caseSecrets = currentPreviewCase.drops.map(id => allItems[id]).filter(item => item && item.isSecret); if (caseSecrets.length > 0) secItem = caseSecrets[0]; } randomItem = secItem; }
             const div = document.createElement('div'); div.className = 'item'; div.style.borderBottom = `4px solid ${randomItem.color || '#fff'}`; div.style.background = `linear-gradient(to top, ${randomItem.color || '#fff'}22, transparent)`;
             if (randomItem.type === 'promo' || randomItem.type === 'nothing') div.innerHTML = `<div style="font-size: 40px;">${randomItem.icon}</div><div class="item-text" style="color:${randomItem.color}">${randomItem.name}</div>`;
             else if (randomItem.type === 'money') div.innerHTML = `<div style="font-size: 16px; font-weight: 800; color:${randomItem.color}">${(randomItem.price||0).toLocaleString('ru-RU')} ₽</div>`;
@@ -964,7 +976,7 @@
     function runRouletteAnimation(winningItem, callback) {
         if (!winningItem) { callback(); return; } const winningIndex = 60; const rouletteItems = document.getElementById('rouletteItems'); const winDiv = rouletteItems.children[winningIndex];
         if (winDiv) { winDiv.style.borderBottom = `4px solid ${winningItem.color}`; winDiv.style.background = `linear-gradient(to top, ${winningItem.color}66, transparent)`; if (winningItem.type === 'promo' || winningItem.type === 'nothing') winDiv.innerHTML = `<div style="font-size: 40px;">${winningItem.icon}</div><div class="item-text" style="color:${winningItem.color}">${winningItem.name}</div>`; else if (winningItem.type === 'money') winDiv.innerHTML = `<div style="font-size: 16px; font-weight: 800; color:${winningItem.color}">${(winningItem.price||0).toLocaleString('ru-RU')} ₽</div>`; else winDiv.innerHTML = `<div style="filter: drop-shadow(0 0 15px ${winningItem.color}); display:flex; justify-content:center; align-items:center; width:100%; height:100%;">${renderItemIcon(winningItem, true)}</div>`; }
-        if (isStandardCase && Math.random() < 0.15 && currentPreviewCase.id !== 'agent_case') { const offsetOptions = [-2, -1, 1, 2]; const secretIndex = winningIndex + offsetOptions[Math.floor(Math.random() * offsetOptions.length)]; if (rouletteItems.children[secretIndex]) { let secItem = genericSecretItem; if (currentPreviewCase) { let caseSecrets = currentPreviewCase.drops.map(id => allItems[id]).filter(item => item && item.isSecret); if (caseSecrets.length > 0) secItem = caseSecrets[0]; } const secretDiv = rouletteItems.children[secretIndex]; secretDiv.innerHTML = `<div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%; filter: drop-shadow(0 0 15px ${secItem.color});">${renderItemIcon(secItem, true)}</div>`; secretDiv.style.borderBottom = `4px solid ${secItem.color}`; secretDiv.style.background = `linear-gradient(to top, ${secItem.color}44, transparent)`; } }
+        if (isStandardCase && Math.random() < 0.15 && currentPreviewCase && currentPreviewCase.id !== 'agent_case') { const offsetOptions = [-2, -1, 1, 2]; const secretIndex = winningIndex + offsetOptions[Math.floor(Math.random() * offsetOptions.length)]; if (rouletteItems.children[secretIndex]) { let secItem = genericSecretItem; if (currentPreviewCase) { let caseSecrets = currentPreviewCase.drops.map(id => allItems[id]).filter(item => item && item.isSecret); if (caseSecrets.length > 0) secItem = caseSecrets[0]; } const secretDiv = rouletteItems.children[secretIndex]; secretDiv.innerHTML = `<div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%; filter: drop-shadow(0 0 15px ${secItem.color});">${renderItemIcon(secItem, true)}</div>`; secretDiv.style.borderBottom = `4px solid ${secItem.color}`; secretDiv.style.background = `linear-gradient(to top, ${secItem.color}44, transparent)`; } }
         const itemWidth = 140; const rouletteWidth = document.getElementById('roulette').offsetWidth; const finalOffset = (winningIndex * itemWidth) - (rouletteWidth / 2) + (itemWidth / 2) + (Math.floor(Math.random() * 80) - 40);
         rouletteItems.style.transition = 'none'; rouletteItems.style.transform = 'translateX(0)'; requestAnimationFrame(() => { requestAnimationFrame(() => { rouletteItems.style.transition = 'transform 5.5s cubic-bezier(0.1, 0.9, 0.1, 1)'; rouletteItems.style.transform = `translateX(-${finalOffset}px)`; }); });
         setTimeout(() => { if(winDiv) { winDiv.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'; winDiv.style.transform = 'scale(1.15)'; winDiv.style.zIndex = '10'; } }, 5000); setTimeout(callback, 5700);
@@ -973,10 +985,12 @@
     function showResultModal(title) {
         if (!lastWonItem) return; document.getElementById('resultTitle').innerText = title; document.getElementById('resultItemIcon').innerHTML = renderItemIcon(lastWonItem); document.getElementById('resultItemName').innerText = lastWonItem.name; document.getElementById('resultItemName').style.color = lastWonItem.color; document.getElementById('resultItemIcon').style.filter = `drop-shadow(0 0 40px ${lastWonItem.color})`;
         const infoBlock = document.getElementById('resultItemInfoBlock'); const itemsActions = document.getElementById('resultActionsContainer'); let priceNum = lastWonItem.price || 0;
+        
         if (lastWonItem.type === 'promo') { infoBlock.innerHTML = `Вы выиграли одноразовый промокод на <b>+5%</b> к пополнению!`; itemsActions.innerHTML = `<button class="btn btn-success" onclick="claimLuckyPromo(this)">Забрать в боте</button>`; } 
         else if (lastWonItem.type === 'nothing' || lastWonItem.type === 'fail') { infoBlock.innerHTML = lastWonItem.type === 'fail' ? `Предмет сгорел.` : `Приходите завтра!`; itemsActions.innerHTML = `<button class="btn btn-outline" onclick="finishOpening()">Закрыть</button>`; } 
         else if (lastWonItem.type === 'money') { infoBlock.innerHTML = `Зачислено: <span style="color: #00b894; font-weight: bold;">${priceNum.toLocaleString('ru-RU')} ₽</span>`; itemsActions.innerHTML = `<button class="btn btn-success" onclick="takeMoney(this)">💰 Забрать деньги на баланс</button>`; } 
         else if (lastWonItem.type === 'agent') { infoBlock.innerHTML = `<span style="color: #00b894; font-weight: bold;">Уникальные баффы:</span><br><span style="font-size:12px; line-height: 1.5;">${lastWonItem.buffs.replace(/\n/g, '<br>')}</span>`; itemsActions.innerHTML = `<button class="btn btn-success" onclick="keepItem(this)">💼 Нанять агента</button>`; } 
+        else if (lastWonItem.type === 'sticker') { infoBlock.innerHTML = `Спец. предмет<br><span style="color:#a29bfe; font-size:12px;">Сувенирная Капсула Наклеек #${lastWonItem.capsuleNum}</span>`; itemsActions.innerHTML = `<button class="btn btn-success" onclick="keepItem(this)">🎒 Забрать наклейку</button>`; }
         else { if (hasAgent('agent_perfecto')) priceNum = Math.floor(priceNum * 1.10); let buffText = hasAgent('agent_perfecto') ? `<br><span style="color:#00b894; font-size:11px;">(Сработал бафф Продавец +10%)</span>` : ''; infoBlock.innerHTML = `Цена продажи: <span style="color: #fdcb6e; font-weight: bold;">${priceNum.toLocaleString('ru-RU')} ₽</span>${buffText}`; itemsActions.innerHTML = `<button class="btn btn-success" onclick="keepItem(this)">🎒 В инвентарь</button> <button class="btn btn-outline" onclick="sellFromModal(this)">💰 Продать за ${priceNum.toLocaleString('ru-RU')} ₽</button>`; }
         openModal('resultModal');
     }
@@ -989,16 +1003,10 @@
     }
 
     function keepMultiItems(btn) { if (btn) btn.disabled = true; if (multiWonItems.length === 0) return; let moneyAdded = 0; let itemsAdded = 0; multiWonItems.forEach(item => { if (item.type === 'money') moneyAdded += item.price; else if (item.type !== 'promo') { inventory.push({ ...item, invId: String(Date.now() + Math.random()) }); itemsAdded++; } }); multiWonItems = []; balance += moneyAdded; if(moneyAdded > 0) tg.showAlert(`Предметы добавлены в инвентарь!\nЗачислено на баланс: ${moneyAdded.toLocaleString('ru-RU')} ₽`); updateBalanceUI(); saveAllData(); db.save('pending_claim_multi', 'null'); finishOpening(); }
-    function sellMultiItems(btn) { if (btn) btn.disabled = true; if (multiWonItems.length === 0) return; let totalAdded = 0; multiWonItems.forEach(item => { if (item.type === 'money') totalAdded += item.price; else if (item.type !== 'promo') { let sellPrice = item.price; if (hasAgent('agent_perfecto')) sellPrice = Math.floor(sellPrice * 1.10); totalAdded += sellPrice; } }); 
-        addQuestProgress('sells', totalAdded);
-        multiWonItems = []; balance += totalAdded; tg.showAlert(`Вы продали всё и получили ${totalAdded.toLocaleString('ru-RU')} ₽.`); updateBalanceUI(); db.save('pending_claim_multi', 'null'); finishOpening(); 
-    }
+    function sellMultiItems(btn) { if (btn) btn.disabled = true; if (multiWonItems.length === 0) return; let totalAdded = 0; multiWonItems.forEach(item => { if (item.type === 'money') totalAdded += item.price; else if (item.type !== 'promo') { let sellPrice = item.price; if (hasAgent('agent_perfecto')) sellPrice = Math.floor(sellPrice * 1.10); totalAdded += sellPrice; } }); addQuestProgress('sells', totalAdded); multiWonItems = []; balance += totalAdded; tg.showAlert(`Вы продали всё и получили ${totalAdded.toLocaleString('ru-RU')} ₽.`); updateBalanceUI(); db.save('pending_claim_multi', 'null'); finishOpening(); }
     function claimLuckyPromo(btn) { if (btn) btn.disabled = true; if (!lastWonItem) return; lastWonItem = null; tg.openTelegramLink('https://t.me/StockOGCasesBot?start=lucky'); finishOpening(); }
     function keepItem(btn) { if (btn) btn.disabled = true; if (!lastWonItem) return; let itemToKeep = lastWonItem; lastWonItem = null; inventory.push({ ...itemToKeep, invId: String(Date.now() + Math.random()) }); saveAllData(); db.save('pending_claim', 'null'); updateAgentStatus(); finishOpening(); }
-    function sellFromModal(btn) { if (btn) btn.disabled = true; if (!lastWonItem) return; let priceNum = lastWonItem.price || 0; if (hasAgent('agent_perfecto') && lastWonItem.type !== 'money' && lastWonItem.type !== 'agent' && lastWonItem.type !== 'promo') priceNum = Math.floor(priceNum * 1.10); 
-        addQuestProgress('sells', priceNum);
-        lastWonItem = null; balance += priceNum; updateBalanceUI(); db.save('pending_claim', 'null'); finishOpening(); 
-    }
+    function sellFromModal(btn) { if (btn) btn.disabled = true; if (!lastWonItem) return; let priceNum = lastWonItem.price || 0; if (hasAgent('agent_perfecto') && lastWonItem.type !== 'money' && lastWonItem.type !== 'agent' && lastWonItem.type !== 'promo') priceNum = Math.floor(priceNum * 1.10); addQuestProgress('sells', priceNum); lastWonItem = null; balance += priceNum; updateBalanceUI(); db.save('pending_claim', 'null'); finishOpening(); }
     function takeMoney(btn) { if (btn) btn.disabled = true; if (!lastWonItem) return; const priceNum = lastWonItem.price || 0; lastWonItem = null; balance += priceNum; updateBalanceUI(); db.save('pending_claim', 'null'); finishOpening(); }
     function finishOpening() { db.save('pending_claim', 'null'); db.save('pending_claim_multi', 'null'); closeModal('resultModal'); closeModal('multiResultModal'); document.getElementById('page-roulette').classList.remove('active'); if(isBonusMode) { document.getElementById('page-bonus').classList.add('active'); updateBonusButton(); checkQuests(); } else if(craftSelectedIds.length > 0 || upgMyItem) { document.getElementById('page-games').classList.add('active'); resetCrafting(); upgMyItem = null; updateUpgUI(); } else if(isStandardCase) { document.getElementById('page-case-view').classList.add('active'); } else { document.getElementById('page-cases').classList.add('active'); } isOpening = false; isBonusMode = false; isStandardCase = false; }
 
@@ -1008,71 +1016,102 @@
         const sortedInv = [...inventory].sort((a, b) => { if (a.type === 'agent' && b.type !== 'agent') return -1; if (a.type !== 'agent' && b.type === 'agent') return 1; return (b.price || 0) - (a.price || 0); });
         sortedInv.forEach(item => {
             const priceNum = item.price || 0;
-            if (item.type === 'agent') { grid.innerHTML += `<div class="inv-item" style="border-top: 3px solid ${item.color}; background: rgba(108,92,231,0.1);"><div class="inv-item-img">${renderItemIcon(item)}</div><div class="inv-item-name" style="color: ${item.color}">${item.name}</div><div class="inv-item-price" style="white-space:normal; line-height:1.2;">Бафф активен</div><div style="display: flex; gap: 5px; width: 100%; margin-top: 10px;"><button class="btn btn-outline" style="flex: 1; padding: 6px; font-size: 11px; border-color: #ff4757; color: #ff4757;" onclick="fireAgent('${item.invId}', '${item.name}')">Уволить</button></div></div>`; } 
-            else { grid.innerHTML += `<div class="inv-item" style="border-top: 3px solid ${item.color};"><div class="inv-item-img">${renderItemIcon(item)}</div><div class="inv-item-name" style="color: ${item.color}">${item.name}</div><div class="inv-item-price">Стоимость: ${priceNum.toLocaleString('ru-RU')} ₽</div><div style="display: flex; gap: 5px; width: 100%; margin-top: 10px;"><button class="btn btn-outline" style="flex: 1; padding: 6px; font-size: 11px; border-color: rgba(255,255,255,0.1); color: #fff;" onclick="sellSingleItem('${item.invId}', ${priceNum}, this)">Продать</button><button class="btn btn-success" style="flex: 1; padding: 6px; font-size: 11px;" onclick="openWithdrawModal('${item.invId}')">Вывод</button></div></div>`; }
+            if (item.type === 'agent') { grid.innerHTML += `<div class="inv-item" style="border-top: 3px solid ${item.color}; background: rgba(108,92,231,0.1);"><div class="inv-item-img">${renderItemIcon(item)}</div><div class="inv-item-name" style="color: ${item.color}">${item.name}</div><div class="inv-item-desc">Бафф активен</div><div style="display: flex; gap: 5px; width: 100%; margin-top: auto;"><button class="btn btn-outline" style="flex: 1; padding: 6px; font-size: 11px; border-color: #ff4757; color: #ff4757;" onclick="fireAgent('${item.invId}', '${item.name}')">Уволить</button></div></div>`; } 
+            else if (item.type === 'capsule') { grid.innerHTML += `<div class="inv-item" style="border-top: 3px solid ${item.color}; background: rgba(235,75,75,0.05);"><div class="inv-item-img">${renderItemIcon(item)}</div><div class="inv-item-name" style="color: ${item.color}">${item.name} #${item.capsuleNum}</div><div class="inv-item-desc">Лимитка</div><div style="display: flex; gap: 5px; width: 100%; margin-top: auto;"><button class="btn btn-outline" style="flex: 1; padding: 6px; font-size: 11px; border-color: rgba(255,255,255,0.1); color: #fff;" onclick="openMarketSellModal('${item.invId}')">На маркет</button><button class="btn btn-success" style="flex: 1; padding: 6px; font-size: 11px;" onclick="openCapsuleFromInv('${item.invId}')">Открыть</button></div></div>`; }
+            else if (item.type === 'sticker') { grid.innerHTML += `<div class="inv-item" style="border-top: 3px solid ${item.color};"><div class="inv-item-img">${renderItemIcon(item)}</div><div class="inv-item-name" style="color: ${item.color}">${item.name}</div><div class="inv-item-desc">Капсула #${item.capsuleNum}</div><div style="display: flex; gap: 5px; width: 100%; margin-top: auto;"><button class="btn btn-outline" style="flex: 1; padding: 6px; font-size: 11px; border-color: rgba(255,255,255,0.1); color: #fff;" onclick="openMarketSellModal('${item.invId}')">На маркет</button><button class="btn btn-primary" style="flex: 1; padding: 6px; font-size: 11px;" onclick="openApplyStickerModal('${item.invId}')">Наклеить</button></div></div>`; }
+            else if (item.isSecret) { grid.innerHTML += `<div class="inv-item" style="border-top: 3px solid ${item.color};"><div class="inv-item-img">${renderItemIcon(item)}</div><div class="inv-item-name" style="color: ${item.color}">${item.name}</div><div class="inv-item-desc">Цена: ${priceNum.toLocaleString('ru-RU')} ₽</div><div style="display: flex; gap: 5px; width: 100%; margin-top: auto;"><button class="btn btn-outline" style="flex: 1; padding: 6px; font-size: 11px; border-color: rgba(255,255,255,0.1); color: #fff;" onclick="sellSingleItem('${item.invId}', ${priceNum}, this)">Продать боту</button><button class="btn btn-warning" style="flex: 1; padding: 6px; font-size: 11px; color:#2d3436;" onclick="openMarketSellModal('${item.invId}')">На маркет</button></div></div>`; }
+            else { grid.innerHTML += `<div class="inv-item" style="border-top: 3px solid ${item.color};"><div class="inv-item-img">${renderItemIcon(item)}</div><div class="inv-item-name" style="color: ${item.color}">${item.name}</div><div class="inv-item-desc">Цена: ${priceNum.toLocaleString('ru-RU')} ₽</div><div style="display: flex; gap: 5px; width: 100%; margin-top: auto;"><button class="btn btn-outline" style="flex: 1; padding: 6px; font-size: 11px; border-color: rgba(255,255,255,0.1); color: #fff;" onclick="sellSingleItem('${item.invId}', ${priceNum}, this)">Продать</button><button class="btn btn-success" style="flex: 1; padding: 6px; font-size: 11px;" onclick="openWithdrawModal('${item.invId}')">Вывод</button></div></div>`; }
         });
     }
 
     function sellSingleItem(invId, basePrice, btnElement) { 
         if (btnElement) { if (btnElement.disabled) return; btnElement.disabled = true; btnElement.innerText = "⏳"; }
         const itemIdx = inventory.findIndex(item => String(item.invId) === String(invId)); if (itemIdx === -1) return; let finalPrice = basePrice; if (hasAgent('agent_perfecto')) finalPrice = Math.floor(finalPrice * 1.10); inventory.splice(itemIdx, 1); 
-        addQuestProgress('sells', finalPrice);
-        balance += finalPrice; updateBalanceUI(); saveAllData(); renderInventory(); 
+        addQuestProgress('sells', finalPrice); balance += finalPrice; updateBalanceUI(); saveAllData(); renderInventory(); 
     }
     
-    function openWithdrawModal(invId) {
-        if (!linkedRobloxAcc) { alert('Сначала привяжите свой аккаунт Roblox в разделе Профиль!'); return; }
-        const item = inventory.find(i => String(i.invId) === String(invId)); if (!item || (item.price || 0) < 150000) { alert("Вывод доступен только для предметов стоимостью от 150 000 ₽!"); return; }
-        currentWithdrawItemId = invId; document.getElementById('wdItemName').innerText = item.name; document.getElementById('wdTargetAcc').innerText = linkedRobloxAcc; openModal('withdrawModal');
+    function openApplyStickerModal(invId) {
+        currentStickerInvId = invId; const grid = document.getElementById('applyStickerGrid'); grid.innerHTML = ''; 
+        const clothes = inventory.filter(i => i.type === 'item' && !i.appliedSticker);
+        if (clothes.length === 0) { grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #8b8b99;">Нет подходящей одежды без наклеек</div>'; } else { clothes.forEach(item => { const priceNum = item.price || 0; grid.innerHTML += `<div class="inv-item" style="border-top: 3px solid ${item.color};" onclick="confirmApplySticker('${item.invId}')"><div class="inv-item-img">${renderItemIcon(item)}</div><div class="inv-item-name">${item.name}</div><div class="inv-item-price">${priceNum.toLocaleString('ru-RU')} ₽</div></div>`; }); } openModal('applyStickerModal'); 
     }
 
-    function confirmWithdraw() {
-        const btn = document.getElementById('wdSubmitBtn'); btn.innerText = 'Отправка...'; btn.disabled = true;
-        setTimeout(() => { const itemIdx = inventory.findIndex(i => String(i.invId) === String(currentWithdrawItemId)); if (itemIdx === -1) return; const item = inventory[itemIdx]; inventory.splice(itemIdx, 1); saveAllData(); renderInventory(); closeModal('withdrawModal'); const payloadStr = `${item.id}||${item.price || 0}||${linkedRobloxAcc}`; const payload = btoa(unescape(encodeURIComponent(payloadStr))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); tg.openTelegramLink(`https://t.me/StockOGCasesBot?start=wd_${payload}`); btn.innerText = 'Подтвердить вывод'; btn.disabled = false; }, 300);
+    function confirmApplySticker(targetInvId) {
+        let stickerIdx = inventory.findIndex(i => String(i.invId) === String(currentStickerInvId)); let targetIdx = inventory.findIndex(i => String(i.invId) === String(targetInvId));
+        if(stickerIdx === -1 || targetIdx === -1) return;
+        let sticker = inventory[stickerIdx]; let target = inventory[targetIdx];
+        let isCrit = false;
+        if(sticker.buffDbl && sticker.buffDbl > 0 && (Math.random() * 100) <= sticker.buffDbl) { target.price = target.price * 2; isCrit = true; }
+        target.price = Math.floor(target.price * sticker.buffVal); target.appliedSticker = sticker.id;
+        if(sticker.buffUpg && sticker.buffUpg > 0) target.stickerUpgBuff = sticker.buffUpg;
+        inventory.splice(stickerIdx, 1); saveAllData(); renderInventory(); closeModal('applyStickerModal');
+        if(isCrit) tg.showAlert(`🔥 КРИТИЧЕСКИЙ УСПЕХ!\nЦена вещи удвоена перед баффом!\nНовая цена: ${target.price.toLocaleString('ru-RU')} ₽`); else alert(`✅ Наклейка успешно применена!\nНовая цена вещи: ${target.price.toLocaleString('ru-RU')} ₽`);
     }
 
-    function applyPromo(btn) { const code = document.getElementById('promoInput').value.trim(); if (!code) { alert("Пожалуйста, введите промокод!"); return; } btn.disabled = true; btn.innerText = '...'; tg.openTelegramLink(`https://t.me/StockOGCasesBot?start=promo_${code}`); setTimeout(() => { document.getElementById('promoInput').value = ''; btn.disabled = false; btn.innerText = 'ОК'; }, 2000); }
-    function copyRefLink() { navigator.clipboard.writeText(document.getElementById('refLink').innerText).then(() => { alert('Реферальная ссылка скопирована!'); }); }
+    function openMarketSellModal(invId) {
+        let item = inventory.find(i => String(i.invId) === String(invId)); if(!item) return; currentMarketSellId = invId;
+        let displayName = item.name; if(item.type === 'capsule') displayName += ` #${item.capsuleNum}`; if(item.type === 'sticker') displayName += ` (Капс. #${item.capsuleNum})`;
+        document.getElementById('marketSellName').innerText = displayName; document.getElementById('marketPriceInput').value = ''; openModal('marketSellModal');
+    }
+
+    function confirmMarketListing() {
+        let price = parseInt(document.getElementById('marketPriceInput').value);
+        if(!price || isNaN(price) || price <= 0) { alert('Укажите корректную цену!'); return; }
+        let itemIdx = inventory.findIndex(i => String(i.invId) === String(currentMarketSellId)); if(itemIdx === -1) return;
+        let item = inventory[itemIdx]; inventory.splice(itemIdx, 1); marketListings.push({ ...item, marketPrice: price });
+        updateBalanceUI(); renderInventory(); closeModal('marketSellModal');
+        let displayName = item.name; if(item.type === 'capsule') displayName += ` #${item.capsuleNum}`; if(item.type === 'sticker') displayName += ` (Капс. #${item.capsuleNum})`;
+        let extra = "none"; if(item.appliedSticker) extra = item.appliedSticker; if(item.type === 'capsule' || item.type === 'sticker') extra = `capsule_num:${item.capsuleNum}`;
+        let payload = btoa(unescape(encodeURIComponent(`${item.invId}||${item.id}||${price}||${displayName}||${extra}`))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        tg.openTelegramLink(`https://t.me/StockOGCasesBot?start=msell_${payload}`);
+    }
+
+    function cancelMarketListing(invId) {
+        let listIdx = marketListings.findIndex(i => String(i.invId) === String(invId)); if(listIdx === -1) return;
+        let item = marketListings[listIdx]; marketListings.splice(listIdx, 1); delete item.marketPrice; inventory.push(item);
+        updateBalanceUI(); renderMarket(); tg.openTelegramLink(`https://t.me/StockOGCasesBot?start=mcancel_${invId}`);
+    }
+
+    function renderMarket() {
+        const myContainer = document.getElementById('myMarketListings'); if(!myContainer) return; myContainer.innerHTML = '';
+        if(marketListings.length === 0) { myContainer.innerHTML = '<div style="color:#8b8b99; font-size:13px;">У вас нет активных лотов.</div>'; }
+        else {
+            marketListings.forEach(item => {
+                let displayName = item.name; if(item.type === 'capsule') displayName += ` #${item.capsuleNum}`; if(item.type === 'sticker') displayName += ` (Капс. #${item.capsuleNum})`;
+                myContainer.innerHTML += `<div class="market-listing"><div class="market-listing-info"><div class="market-listing-img">${renderItemIcon(item)}</div><div><div style="font-size:12px; font-weight:bold; color:${item.color}">${displayName}</div><div style="font-size:11px; color:#fdcb6e; font-weight:bold;">${item.marketPrice.toLocaleString('ru-RU')} ₽</div></div></div><button class="btn btn-outline" style="width:auto; padding:6px 12px; font-size:11px;" onclick="cancelMarketListing('${item.invId}')">Снять</button></div>`;
+            });
+        }
+    }
 
     function renderCraftInventory() {
-        const grid = document.getElementById('craftInventoryGrid'); grid.innerHTML = ''; const standardInv = inventory.filter(i => !i.isSecret && i.type !== 'money' && i.type !== 'key' && i.type !== 'agent');
-        if (standardInv.length < 3) { grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #8b8b99; padding: 20px 0;">Для контракта нужно минимум 3 обычных предмета</div>'; return; }
+        const grid = document.getElementById('craftInventoryGrid'); grid.innerHTML = ''; const standardInv = inventory.filter(i => !i.isSecret && i.type !== 'money' && i.type !== 'key' && i.type !== 'agent' && i.type !== 'capsule' && i.type !== 'sticker');
+        if (standardInv.length < 3) { grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #8b8b99; padding: 20px 0;">Для контракта нужно минимум 3 обычных предмета одежды</div>'; return; }
         standardInv.forEach(item => { const isSelected = craftSelectedIds.includes(String(item.invId)); grid.innerHTML += `<div class="inv-item ${isSelected ? 'selected' : ''}" style="border-top: 3px solid ${item.color};" onclick="toggleCraftItem('${item.invId}')"><div class="inv-item-img">${renderItemIcon(item)}</div><div class="inv-item-name">${item.name}</div></div>`; }); updateCraftSlots();
     }
     function toggleCraftItem(invId) { if (craftSelectedIds.includes(String(invId))) craftSelectedIds = craftSelectedIds.filter(id => id !== String(invId)); else if (craftSelectedIds.length < 3) craftSelectedIds.push(String(invId)); renderCraftInventory(); }
     function updateCraftSlots() { for(let i=0; i<3; i++) { const slot = document.getElementById(`slot-${i}`); if (craftSelectedIds[i]) { const item = inventory.find(x => String(x.invId) === String(craftSelectedIds[i])); slot.innerHTML = renderItemIcon(item); slot.classList.add('filled'); } else { slot.innerHTML = ''; slot.classList.remove('filled'); } } const btn = document.getElementById('btnCraft'); if (craftSelectedIds.length === 3) { btn.style.opacity = '1'; btn.style.cursor = 'pointer'; } else { btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed'; } }
-    
     function executeCraft() {
         if (craftSelectedIds.length < 3 || isOpening) return; isOpening = true; isStandardCase = false; stats.crafts += 1; document.getElementById('statCrafts').innerText = stats.crafts; saveAllData();
         inventory = inventory.filter(item => !craftSelectedIds.includes(String(item.invId))); saveAllData(); document.getElementById('page-games').classList.remove('active'); document.getElementById('page-roulette').classList.add('active'); document.getElementById('openingCaseName').innerText = "Контракт..."; document.getElementById('roulette').style.display = 'block';
-        let possibleDrops = Object.values(allItems).filter(i => !i.isSecret && i.type === 'item' && i.type !== 'agent');
+        let possibleDrops = Object.values(allItems).filter(i => !i.isSecret && i.type === 'item');
         if (hasAgent('agent_vovan') || hasAgent('agent_perfecto')) { possibleDrops = possibleDrops.map(item => { let w = item.weight || 1; if ((item.price || 0) > 80000) w *= 3; return { ...item, weight: w }; }); }
         initRoulette(possibleDrops); const baseWonItem = getWeightedRandomItem(possibleDrops); lastWonItem = JSON.parse(JSON.stringify(baseWonItem)); if (!lastWonItem.price) lastWonItem.price = 0; db.save('pending_claim', JSON.stringify(lastWonItem)); 
-        runRouletteAnimation(lastWonItem, () => { 
-            addQuestProgress('contracts', 1);
-            showResultModal('Контракт выполнен!'); craftSelectedIds = []; 
-        });
+        runRouletteAnimation(lastWonItem, () => { addQuestProgress('contracts', 1); showResultModal('Контракт выполнен!'); craftSelectedIds = []; });
     }
     function resetCrafting() { craftSelectedIds = []; if(document.getElementById('tab-contract').classList.contains('active')) renderCraftInventory(); }
 
-    function openUpgMyModal() { const grid = document.getElementById('upgMyGrid'); grid.innerHTML = ''; const standardInv = inventory.filter(i => !i.isSecret && i.type !== 'money' && i.type !== 'key' && i.type !== 'agent'); if (standardInv.length === 0) { grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #8b8b99;">Нет подходящих предметов</div>'; } else { standardInv.forEach(item => { const priceNum = item.price || 0; grid.innerHTML += `<div class="inv-item" style="border-top: 3px solid ${item.color};" onclick="selectUpgMy('${item.invId}')"><div class="inv-item-img">${renderItemIcon(item)}</div><div class="inv-item-name">${item.name}</div><div class="inv-item-price">${priceNum.toLocaleString('ru-RU')} ₽</div></div>`; }); } openModal('upgMyModal'); }
+    function openUpgMyModal() { const grid = document.getElementById('upgMyGrid'); grid.innerHTML = ''; const standardInv = inventory.filter(i => !i.isSecret && i.type !== 'money' && i.type !== 'key' && i.type !== 'agent' && i.type !== 'capsule' && i.type !== 'sticker'); if (standardInv.length === 0) { grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #8b8b99;">Нет подходящей одежды</div>'; } else { standardInv.forEach(item => { const priceNum = item.price || 0; grid.innerHTML += `<div class="inv-item" style="border-top: 3px solid ${item.color};" onclick="selectUpgMy('${item.invId}')"><div class="inv-item-img">${renderItemIcon(item)}</div><div class="inv-item-name">${item.name}</div><div class="inv-item-price">${priceNum.toLocaleString('ru-RU')} ₽</div></div>`; }); } openModal('upgMyModal'); }
     function selectUpgMy(invId) { upgMyItem = inventory.find(i => String(i.invId) === String(invId)); closeModal('upgMyModal'); updateUpgUI(); }
     function openUpgTargetModal() { const grid = document.getElementById('upgTargetGrid'); grid.innerHTML = ''; const targetPool = Object.values(allItems).filter(d => d.type === 'item' && !d.isSecret && (d.price || 0) > 10000 && d.type !== 'agent'); targetPool.sort((a,b) => (a.price || 0) - (b.price || 0)).forEach(item => { let p = item.price || 0; grid.innerHTML += `<div class="inv-item" style="border-top: 3px solid ${item.color};" onclick="selectUpgTarget('${item.id}')"><div class="inv-item-img">${renderItemIcon(item)}</div><div class="inv-item-name">${item.name}</div><div class="inv-item-price">${p.toLocaleString('ru-RU')} ₽</div></div>`; }); openModal('upgTargetModal'); }
     function selectUpgTarget(id) { upgTargetItem = allItems[id]; closeModal('upgTargetModal'); updateUpgUI(); }
-    function updateUpgUI() { const mySlot = document.getElementById('upg-my-slot'); if (upgMyItem) { mySlot.innerHTML = renderItemIcon(upgMyItem); mySlot.classList.add('filled'); } else { mySlot.innerHTML = '<span style="font-size:12px; color:#8b8b99;">Ваш<br>предмет</span>'; mySlot.classList.remove('filled'); } const targetSlot = document.getElementById('upg-target-slot'); if (upgTargetItem) { targetSlot.innerHTML = renderItemIcon(upgTargetItem); targetSlot.classList.add('filled'); } else { targetSlot.innerHTML = '<span style="font-size:12px; color:#8b8b99;">Желаемый<br>предмет</span>'; targetSlot.classList.remove('filled'); } let chance = 0; if (upgMyItem && upgTargetItem) { let trgP = upgTargetItem.price || 1; let myP = upgMyItem.price || 0; let agentUpgBonus = 0; if (hasAgent('agent_vovan')) agentUpgBonus = 6; else if (hasAgent('agent_cheba') || hasAgent('agent_funky') || hasAgent('agent_pechen')) agentUpgBonus = 5; chance = Math.min((myP / trgP) * 100 * 0.9 + agentUpgBonus, 95); } document.getElementById('upg-chance').innerText = `Шанс: ${chance.toFixed(1)}%`; const btn = document.getElementById('btnUpgrade'); if (upgMyItem && upgTargetItem) { btn.style.opacity = '1'; btn.style.cursor = 'pointer'; } else { btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed'; } }
-    
+    function updateUpgUI() { const mySlot = document.getElementById('upg-my-slot'); if (upgMyItem) { mySlot.innerHTML = renderItemIcon(upgMyItem); mySlot.classList.add('filled'); } else { mySlot.innerHTML = '<span style="font-size:12px; color:#8b8b99;">Ваш<br>предмет</span>'; mySlot.classList.remove('filled'); } const targetSlot = document.getElementById('upg-target-slot'); if (upgTargetItem) { targetSlot.innerHTML = renderItemIcon(upgTargetItem); targetSlot.classList.add('filled'); } else { targetSlot.innerHTML = '<span style="font-size:12px; color:#8b8b99;">Желаемый<br>предмет</span>'; targetSlot.classList.remove('filled'); } let chance = 0; if (upgMyItem && upgTargetItem) { let trgP = upgTargetItem.price || 1; let myP = upgMyItem.price || 0; let agentUpgBonus = 0; if (hasAgent('agent_vovan')) agentUpgBonus += 6; else if (hasAgent('agent_cheba') || hasAgent('agent_funky') || hasAgent('agent_pechen')) agentUpgBonus += 5; if(upgMyItem.stickerUpgBuff) agentUpgBonus += upgMyItem.stickerUpgBuff; chance = Math.min((myP / trgP) * 100 * 0.9 + agentUpgBonus, 95); } document.getElementById('upg-chance').innerText = `Шанс: ${chance.toFixed(1)}%`; const btn = document.getElementById('btnUpgrade'); if (upgMyItem && upgTargetItem) { btn.style.opacity = '1'; btn.style.cursor = 'pointer'; } else { btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed'; } }
     function executeUpgrade() {
-        if (!upgMyItem || !upgTargetItem || isOpening) return; isOpening = true; isStandardCase = false; let trgP = upgTargetItem.price || 1; let myP = upgMyItem.price || 0; let agentUpgBonus = 0; if (hasAgent('agent_vovan')) agentUpgBonus = 6; else if (hasAgent('agent_cheba') || hasAgent('agent_funky') || hasAgent('agent_pechen')) agentUpgBonus = 5; let chance = Math.min((myP / trgP) * 100 * 0.9 + agentUpgBonus, 95); let roll = Math.random() * 100; let isWin = roll <= chance; inventory = inventory.filter(i => String(i.invId) !== String(upgMyItem.invId)); saveAllData(); document.getElementById('page-games').classList.remove('active'); document.getElementById('page-roulette').classList.add('active'); document.getElementById('openingCaseName').innerText = "Апгрейд..."; document.getElementById('roulette').style.display = 'block'; const r = document.getElementById('rouletteItems'); r.innerHTML = ''; for (let i = 0; i < 70; i++) { let item = (Math.random() < 0.5) ? upgTargetItem : { icon: '❌', color: '#8b8b99' }; const div = document.createElement('div'); div.className = 'item'; div.style.borderBottom = `4px solid ${item.color}`; div.innerHTML = `<div>${renderItemIcon(item)}</div>`; r.appendChild(div); } if (isWin) { lastWonItem = JSON.parse(JSON.stringify(upgTargetItem)); } else { lastWonItem = { id: 'fail', icon: '❌', name: 'ПРОВАЛ', color: '#8b8b99', price: 0, type: 'fail' }; } if (!lastWonItem.price) lastWonItem.price = 0; db.save('pending_claim', JSON.stringify(lastWonItem)); 
-        runRouletteAnimation(lastWonItem, () => { 
-            if (isWin) { 
-                addQuestProgress('upgrades', 1);
-                showResultModal('Апгрейд успешен!'); 
-            } else { 
-                showResultModal('Провал...'); 
-            } 
-            upgMyItem = null; upgTargetItem = null; 
-        }); 
+        if (!upgMyItem || !upgTargetItem || isOpening) return; isOpening = true; isStandardCase = false; let trgP = upgTargetItem.price || 1; let myP = upgMyItem.price || 0; let agentUpgBonus = 0; if (hasAgent('agent_vovan')) agentUpgBonus += 6; else if (hasAgent('agent_cheba') || hasAgent('agent_funky') || hasAgent('agent_pechen')) agentUpgBonus += 5; if(upgMyItem.stickerUpgBuff) agentUpgBonus += upgMyItem.stickerUpgBuff; let chance = Math.min((myP / trgP) * 100 * 0.9 + agentUpgBonus, 95); let roll = Math.random() * 100; let isWin = roll <= chance; inventory = inventory.filter(i => String(i.invId) !== String(upgMyItem.invId)); saveAllData(); document.getElementById('page-games').classList.remove('active'); document.getElementById('page-roulette').classList.add('active'); document.getElementById('openingCaseName').innerText = "Апгрейд..."; document.getElementById('roulette').style.display = 'block'; const r = document.getElementById('rouletteItems'); r.innerHTML = ''; for (let i = 0; i < 70; i++) { let item = (Math.random() < 0.5) ? upgTargetItem : { icon: '❌', color: '#8b8b99' }; const div = document.createElement('div'); div.className = 'item'; div.style.borderBottom = `4px solid ${item.color}`; div.innerHTML = `<div>${renderItemIcon(item)}</div>`; r.appendChild(div); } if (isWin) { lastWonItem = JSON.parse(JSON.stringify(upgTargetItem)); } else { lastWonItem = { id: 'fail', icon: '❌', name: 'ПРОВАЛ', color: '#8b8b99', price: 0, type: 'fail' }; } if (!lastWonItem.price) lastWonItem.price = 0; db.save('pending_claim', JSON.stringify(lastWonItem)); 
+        runRouletteAnimation(lastWonItem, () => { if (isWin) { addQuestProgress('upgrades', 1); showResultModal('Апгрейд успешен!'); } else { showResultModal('Провал...'); } upgMyItem = null; upgTargetItem = null; }); 
     }
+
+    function openModal(id) { const m = document.getElementById(id); m.style.display = 'flex'; setTimeout(() => m.classList.add('show'), 10); }
+    function closeModal(id) { const m = document.getElementById(id); m.classList.remove('show'); setTimeout(() => m.style.display = 'none', 300); }
 </script>
 </body>
 </html>
