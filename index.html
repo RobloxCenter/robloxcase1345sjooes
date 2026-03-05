@@ -403,7 +403,7 @@
     let tg = window.Telegram.WebApp;
     tg.expand();
 
-    const SEC_SALT = "St0ck0G_2026_X"; // СЕКРЕТНЫЙ КЛЮЧ ОТ ДЮПОВ
+    const SEC_SALT = "St0ck0G_2026_X"; 
 
     const db = {
         save: function(key, val) { 
@@ -1060,7 +1060,7 @@
     }
 
     function confirmApplySticker(targetInvId) {
-        // ЗАЩИТА: Проверка наличия обоих предметов в инвентаре
+        
         let stickerIdx = inventory.findIndex(i => String(i.invId) === String(currentStickerInvId)); 
         let targetIdx = inventory.findIndex(i => String(i.invId) === String(targetInvId));
         if(stickerIdx === -1 || targetIdx === -1) { alert("Ошибка: Один из предметов не найден в инвентаре!"); return; }
